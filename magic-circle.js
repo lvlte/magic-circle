@@ -50,74 +50,15 @@ class MagicCircle {
     this.ctx = canvas.getContext('2d');
   }
 
-  setAxis() {
-    this.translateTo(this.centerX, this.centerY);
-    this.drawCircle();
-    this.setPoints();
-
-    for (let i=0; i<this.modulus; i++) {
-      const ptLabel = {
-        x: this.points[i].x * 1.1,
-        y: this.points[i].y * 1.1
-      };
-
-      this.setAxisLabel(ptLabel, i);
-    }
-  }
-
-  setAxisLabel(point, label) {
-    this.ctx.font = this.axis.fontSize + 'px Arial';
-    this.ctx.fillStyle = this.axis.labelColor;
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(label, point.x, point.y);
-  }
-
-  setPoints() {
-    const modAng = 2*Math.PI/this.modulus;
-    let angle = this.axis.offset;
-    this.points = [];
-
-    for (let i=0; i<this.modulus; i++) {
-      this.points.push({
-        x: Math.cos(angle) * this.radius,
-        y: Math.sin(angle) * this.radius
-      });
-
-      angle += modAng;
-    }
-  }
-
-  relyPoints() {
-    const points = this.points,
-        modAng = 2*Math.PI/this.modulus,
-        multiplier = this.multiplier,
-        len = points.length;
-
-    this.translateTo(this.centerX, this.centerY);
-
-    for (let i=1; i<len; i++) {
-      const j = (i * multiplier) % this.modulus;
-
-      const a = points[i];
-      const b = Math.floor(j) === j ? points[j] : {
-        x: Math.cos(j * modAng + this.axis.offset) * this.radius,
-        y: Math.sin(j * modAng + this.axis.offset) * this.radius
-      };
-
-      this.drawLine(a.x, a.y, b.x, b.y);
-    }
-  }
-
-  clean() {
+  clearCan() {
     this.translateTo(0, 0);
     this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
   }
 
   render() {
-    this.clean();
-    this.setAxis();
-    this.relyPoints();
+    this.clearCan();
+    this.drawAxis();
+    this.drawSegments();
   }
 
   translateTo(x, y) {
@@ -128,6 +69,66 @@ class MagicCircle {
     this.axis.origin.y = y;
 
     this.ctx.translate(dx, dy);
+  }
+
+  setPoints() {
+    const modAng = 2*Math.PI/this.modulus;
+    let angle = this.axis.offset;
+    this.points = [];
+
+    for (let n=0; n<this.modulus; n++) {
+      this.points.push({
+        x: Math.cos(angle) * this.radius,
+        y: Math.sin(angle) * this.radius
+      });
+
+      angle += modAng;
+    }
+  }
+
+  drawAxis() {
+    this.translateTo(this.centerX, this.centerY);
+    this.drawCircle();
+    this.setPoints();
+
+    for (let n=0; n<this.modulus; n++) {
+      const ptLabel = {
+        x: this.points[n].x * 1.1,
+        y: this.points[n].y * 1.1
+      };
+
+      this.drawAxisLabel(ptLabel, n);
+    }
+  }
+
+  drawAxisLabel(point, label) {
+    const ctx = this.ctx;
+
+    ctx.font = this.axis.fontSize + 'px Arial';
+    ctx.fillStyle = this.axis.labelColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.fillText(label, point.x, point.y);
+  }
+
+  drawSegments() {
+    const points = this.points;
+    const modAng = 2*Math.PI/this.modulus;
+
+    this.translateTo(this.centerX, this.centerY);
+
+    for (let n=1; n<points.length; n++) {
+      const m = (n * this.multiplier) % this.modulus;
+
+      const a = points[n];
+      const b = Math.floor(m) === m ? points[m] : {
+        x: Math.cos(m * modAng + this.axis.offset) * this.radius,
+        y: Math.sin(m * modAng + this.axis.offset) * this.radius
+      };
+
+      this.drawLine(a.x, a.y, b.x, b.y);
+    }
   }
 
   drawCircle() {
