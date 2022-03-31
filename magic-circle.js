@@ -17,14 +17,21 @@ class MagicCircle {
 
       // Radial axis
       axis: {
-        offset: -Math.PI/2,       // angular offset
-        color: '#999',
-        labelColor: '#b8d0b2',
-        fontSize: '13',
-        fontFamily: 'Arial',
+        display: false,
+        offset: -Math.PI/2,     // angular offset
         origin: {
-          x: 0,                   // -x offset
-          y: 0                    // -y offset
+          x: 0,                 // -x offset
+          y: 0                  // -y offset
+        },
+        showLabels: true,
+        color: '#999',
+        label: {
+          display: true,
+          color: '#b8d0b2',
+          room: 15,
+          threshold: 7,         // don't display if actual fontSize goes below
+          fontSize: 12,         // (size ref.) reduced as modulus increases
+          fontFamily: 'Arial'
         }
       },
 
@@ -75,7 +82,7 @@ class MagicCircle {
 
   render() {
     this.clearCan();
-    this.drawAxis();
+    this.setAxis();
     this.drawSegments();
   }
 
@@ -104,26 +111,52 @@ class MagicCircle {
     }
   }
 
-  drawAxis() {
-    this.translateTo(this.centerX, this.centerY);
-    this.drawCircle();
+  setAxis() {
     this.setPoints();
 
-    for (let n=0; n<this.modulus; n++) {
-      const ptLabel = {
-        x: this.points[n].x * 1.1,
-        y: this.points[n].y * 1.1
-      };
+    if (!this.axis.display && !this.axis.label.display)
+      return;
 
-      this.drawAxisLabel(ptLabel, n);
+    this.translateTo(this.centerX, this.centerY);
+
+    if (this.axis.display)
+      this.drawCircle();
+
+    if (this.axis.label.display) {
+      const fontSize = this.labelFontSize();
+
+      console.log('fontSize', fontSize)
+
+      if (fontSize < this.axis.label.threshold)
+        return;
+
+      for (let n=0; n<this.modulus; n++) {
+        const ptLabel = {
+          x: this.points[n].x * 1.1,
+          y: this.points[n].y * 1.1
+        };
+        this.drawAxisLabel(ptLabel, n, fontSize);
+      }
     }
   }
 
-  drawAxisLabel(point, label) {
+  labelFontSize() {
+    const distH = Math.abs(this.points[0].x - this.points[1].x);
+    const distV = Math.abs(this.points[0].y - this.points[1].y);
+    const distance = Math.hypot(distH, distV) - this.axis.label.room;
+
+    if (this.axis.label.fontSize > distance)
+      return distance;
+
+    return this.axis.label.fontSize;
+  }
+
+
+  drawAxisLabel(point, label, fontSize) {
     const ctx = this.ctx;
 
-    ctx.font = this.axis.fontSize + 'px Arial';
-    ctx.fillStyle = this.axis.labelColor;
+    ctx.font = fontSize + 'px ' + this.axis.label.fontFamily;
+    ctx.fillStyle = this.axis.label.color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -186,7 +219,7 @@ class MagicCircle {
       }
 
       input.addEventListener('input', function (event) {
-        me[param] = event.target.value;
+        me[param] = event.target.valueAsNumber;
         me.render();
       });
 
