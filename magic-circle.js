@@ -9,9 +9,10 @@ class MagicCircle {
       multiplier: 2,
       modulus: 10,
 
+      mulStep: 0.005,
       modStep: 0.05,
-      mulStep: 0.01,
 
+      // segments color
       color: '#999',
 
       // Radial axis
@@ -24,6 +25,23 @@ class MagicCircle {
         origin: {
           x: 0,                   // -x offset
           y: 0                    // -y offset
+        }
+      },
+
+      controls: {
+        multiplier: {
+          input: {
+            type: 'range',
+            min: 0,
+            max: 10000
+          }
+        },
+        modulus: {
+          input: {
+            type: 'range',
+            min: 2,
+            max: 5000
+          }
         }
       }
     }
@@ -152,6 +170,35 @@ class MagicCircle {
     ctx.stroke();
   }
 
+  addControls() {
+    const ctrl = document.getElementById('controls');
+    const form = document.createElement('form');
+
+    for (const param in this.controls) {
+      const input = document.createElement('input');
+      input.setAttribute('id', param);
+      input.setAttribute('value', this[param]);
+
+      const attr = this.controls[param].input;
+      for (const name in attr) {
+        input.setAttribute(name, attr[name]);
+      }
+
+      const label = document.createElement('label');
+      label.setAttribute('for', param);
+      label.appendChild(document.createTextNode(param));
+
+      const div = document.createElement('div');
+      div.className = 'parameter';
+      div.appendChild(label);
+      div.appendChild(input);
+
+      form.appendChild(div);
+    }
+
+    ctrl.appendChild(form);
+  }
+
 }
 
 
@@ -168,13 +215,14 @@ function screenHeight () {
 }
 
 
-document.addEventListener('DOMContentLoaded', function(e) {
+document.addEventListener('DOMContentLoaded', function() {
   const mc = new MagicCircle('f-canvas');
   console.log('MagicCircle', mc);
 
   mc.render();
+  mc.addControls();
 
-  mc.ctx.canvas.addEventListener('click', function (e) {
+  mc.ctx.canvas.addEventListener('click', function () {
     mc.multiplier += mc.mulStep;
     mc.render();
   });

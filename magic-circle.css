@@ -4,3 +4,28 @@ body {
   overflow: hidden;
   background-color: #0d1117;
 }
+
+#controls {
+  opacity: 0.9;
+  z-index: 1;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 10px;
+}
+
+#controls .parameter {
+  padding: 10px 0px;
+  clear: both;
+}
+
+#controls .parameter > label {
+  color: #fff;
+  text-align: right;
+  font-family: monospace;
+  letter-spacing: .3px;
+  font-size: 10px;
+  padding: 5px 5px;
+  float: left;
+  width: 140px;
+}
