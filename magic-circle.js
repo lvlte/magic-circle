@@ -40,7 +40,7 @@ class MagicCircle {
           input: {
             type: 'range',
             min: 2,
-            max: 5000
+            max: 3000
           }
         }
       }
@@ -171,18 +171,24 @@ class MagicCircle {
   }
 
   addControls() {
+    const me = this;
     const ctrl = document.getElementById('controls');
     const form = document.createElement('form');
 
-    for (const param in this.controls) {
+    for (const param in me.controls) {
       const input = document.createElement('input');
       input.setAttribute('id', param);
-      input.setAttribute('value', this[param]);
+      input.setAttribute('value', me[param]);
 
-      const attr = this.controls[param].input;
+      const attr = me.controls[param].input;
       for (const name in attr) {
         input.setAttribute(name, attr[name]);
       }
+
+      input.addEventListener('input', function (event) {
+        me[param] = event.target.value;
+        me.render();
+      });
 
       const label = document.createElement('label');
       label.setAttribute('for', param);
