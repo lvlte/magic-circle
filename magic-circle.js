@@ -35,6 +35,8 @@ class MagicCircle {
       },
 
       controls: {
+        // For each input, the id, name and value attributes are bound to the
+        // corresponding (non-nested) parameter, if any.
         multiplier: {
           input: {
             type: 'range',
@@ -50,6 +52,7 @@ class MagicCircle {
           }
         },
         mulStep: {
+          bindTo: ['multiplier', 'step'],
           label: 'multiplier-step',
           input: {
             type: 'range',
@@ -59,6 +62,7 @@ class MagicCircle {
           }
         },
         modStep: {
+          bindTo: ['modulus', 'step'],
           label: 'modulus-step',
           input: {
             type: 'range',
@@ -223,24 +227,30 @@ class MagicCircle {
     const ctrl = document.getElementById('controls');
     const form = document.createElement('form');
 
-    for (const param in me.controls) {
-      const input = document.createElement('input');
-      input.setAttribute('id', param);
-      input.setAttribute('name', param);
-      input.setAttribute('value', me[param]);
+    // Elements requiring input event for proper initialization.
+    const toInit = [];
 
-      const attr = me.controls[param].input;
-      for (const name in attr) {
-        input.setAttribute(name, attr[name]);
+    for (const param in me.controls) {
+      const value = me[param] ?? me.controls[param].input.value;
+      const input = document.createElement('input');
+      const attributes = me.controls[param].input;
+
+      for (const name in attributes) {
+        input.setAttribute(name, attributes[name]);
       }
 
-      input.addEventListener('input', function (event) {
-        if (event.target.type === 'range')
-          this.nextElementSibling.value = event.target.valueAsNumber;
+      input.setAttribute('id', param);
+      input.setAttribute('name', param);
+      input.setAttribute('value', value);
 
-        me[param] = event.target.valueAsNumber;
-        me.render();
+      // Bindings
+      input.addEventListener('input', function (event) {
+        me.inputHandler.apply(me, [this, param, event]);
       });
+
+      if (me.controls[param].bindTo) {
+        toInit.push(input);
+      }
 
       const label = document.createElement('label');
       const txt = document.createTextNode(me.controls[param].label ?? param);
@@ -252,12 +262,12 @@ class MagicCircle {
       div.appendChild(label);
       div.appendChild(input);
 
-      if (attr.type === 'range') {
+      if (attributes.type === 'range') {
         // Display actual value
         const output = document.createElement('output');
         output.setAttribute('name', param + '-output');
         output.setAttribute('for', param);
-        output.value = me[param];
+        output.value = value;
         div.appendChild(output);
       }
 
@@ -265,23 +275,42 @@ class MagicCircle {
     }
 
     ctrl.appendChild(form);
+    toInit.forEach(input => input.dispatchEvent(new Event('input')));
+  }
+
+  inputHandler(input, param) {
+    if (param in this) {
+      this[param] = input.valueAsNumber;
+    }
+
+    if (this.controls[param].bindTo) {
+      const [id, attr] = this.controls[param].bindTo;
+      document.getElementById(id).setAttribute(attr, input.valueAsNumber);
+    }
+
+    if (input.type === 'range')
+      input.nextElementSibling.value = input.valueAsNumber;
+
+    this.render();
   }
 
 }
 
 
 function screenWidth () {
-  return window && window.innerWidth ||
-          document.documentElement && document.documentElement.clientWidth ||
-          document.body && document.body.clientWidth;
+  return window.innerWidth ||
+          document.documentElement.clientWidth ||
+          document.body.clientWidth;
 }
 
 function screenHeight () {
-  return window && window.innerHeight ||
-          document.documentElement && document.documentElement.clientHeight ||
+  return window.innerHeight ||
+          document.documentElement.clientHeight ||
           document.body && document.body.clientHeight;
 }
 
+
+// Testing ..
 
 document.addEventListener('DOMContentLoaded', function() {
   const mc = new MagicCircle('f-canvas');
