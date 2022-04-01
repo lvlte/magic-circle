@@ -71,6 +71,10 @@ class MagicCircle {
             step: 0.05
           }
         }
+      },
+
+      animation: {
+        paused: true
       }
     }
 
@@ -294,6 +298,33 @@ class MagicCircle {
     this.render();
   }
 
+  animate() {
+    const me = this;
+
+    // eslint-disable-next-line no-constant-condition
+    if (true || me.controls.multiplier.toggle) {
+      const multiplier = document.getElementById('multiplier');
+      multiplier.value = multiplier.valueAsNumber + me.mulStep;
+      multiplier.dispatchEvent(new Event('input'));
+    }
+
+    // eslint-disable-next-line no-constant-condition
+    if (true || me.controls.modulus.toggle) {
+      const modulus = document.getElementById('modulus');
+      modulus.value = modulus.valueAsNumber + me.modStep;
+      modulus.dispatchEvent(new Event('input'));
+    }
+
+    me.render();
+
+    if (me.animation.paused)
+      return;
+
+    requestAnimationFrame(function() {
+      me.animate.call(me);
+    });
+  }
+
 }
 
 
@@ -309,6 +340,10 @@ function screenHeight () {
           document.body && document.body.clientHeight;
 }
 
+window.requestAnimationFrame = window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame || window.msRequestAnimationFrame;
+
 
 // Testing ..
 
@@ -320,8 +355,14 @@ document.addEventListener('DOMContentLoaded', function() {
   mc.addControls();
 
   mc.ctx.canvas.addEventListener('click', function () {
-    mc.multiplier += mc.mulStep;
-    mc.render();
+    // mc.multiplier += mc.mulStep;
+    // mc.render();
+
+    mc.animation.paused = !mc.animation.paused;
+
+    if (!mc.animation.paused)
+      mc.animate();
+
   });
 
   document.addEventListener('keydown', function (e) {
