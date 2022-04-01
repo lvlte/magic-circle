@@ -17,13 +17,12 @@ class MagicCircle {
 
       // Radial axis
       axis: {
-        display: false,
+        display: true,
         offset: -Math.PI/2,     // angular offset
         origin: {
           x: 0,                 // -x offset
           y: 0                  // -y offset
         },
-        showLabels: true,
         color: '#999',
         label: {
           display: true,
@@ -48,6 +47,24 @@ class MagicCircle {
             type: 'range',
             min: 2,
             max: 3000
+          }
+        },
+        mulStep: {
+          label: 'multiplier-step',
+          input: {
+            type: 'range',
+            min: 0.005,
+            max: 1,
+            step: 0.005
+          }
+        },
+        modStep: {
+          label: 'modulus-step',
+          input: {
+            type: 'range',
+            min: 0.05,
+            max: 1,
+            step: 0.05
           }
         }
       }
@@ -124,8 +141,6 @@ class MagicCircle {
 
     if (this.axis.label.display) {
       const fontSize = this.labelFontSize();
-
-      console.log('fontSize', fontSize)
 
       if (fontSize < this.axis.label.threshold)
         return;
@@ -211,6 +226,7 @@ class MagicCircle {
     for (const param in me.controls) {
       const input = document.createElement('input');
       input.setAttribute('id', param);
+      input.setAttribute('name', param);
       input.setAttribute('value', me[param]);
 
       const attr = me.controls[param].input;
@@ -219,18 +235,31 @@ class MagicCircle {
       }
 
       input.addEventListener('input', function (event) {
+        if (event.target.type === 'range')
+          this.nextElementSibling.value = event.target.valueAsNumber;
+
         me[param] = event.target.valueAsNumber;
         me.render();
       });
 
       const label = document.createElement('label');
+      const txt = document.createTextNode(me.controls[param].label ?? param);
       label.setAttribute('for', param);
-      label.appendChild(document.createTextNode(param));
+      label.appendChild(txt);
 
       const div = document.createElement('div');
       div.className = 'parameter';
       div.appendChild(label);
       div.appendChild(input);
+
+      if (attr.type === 'range') {
+        // Display actual value
+        const output = document.createElement('output');
+        output.setAttribute('name', param + '-output');
+        output.setAttribute('for', param);
+        output.value = me[param];
+        div.appendChild(output);
+      }
 
       form.appendChild(div);
     }
