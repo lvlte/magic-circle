@@ -12,8 +12,9 @@ class MagicCircle {
       mulStep: 0.005,
       modStep: 0.05,
 
-      // segments color
-      color: '#999',
+      // Default segment color for monochrome patterns
+      color: '#999999',             // lower-case hexadecimal notation only
+      colorPattern: 'monoFixed',
 
       // Radial axis
       axis: {
@@ -35,13 +36,33 @@ class MagicCircle {
       },
 
       controls: {
-        // For each input, the id, name and value attributes are bound to the
+        // Create <input/> element if not told otherwise.
+        // For each element, the id, name and value attributes are bound to the
         // corresponding (non-nested) parameter, if any.
+        colorPattern: {
+          element: 'select',
+          label: 'color pattern',
+          select: {
+            options: [
+              'monoFixed',
+              // ...
+              // monoShifted,
+              // segmentLength
+              // leastFactor/primeness
+            ]
+          }
+        },
+        color: {
+          label: false,
+          input: {
+            type: 'color'
+          }
+        },
         multiplier: {
           input: {
             type: 'range',
             min: 0,
-            max: 10000
+            max: 3000
           }
         },
         modulus: {
@@ -201,8 +222,14 @@ class MagicCircle {
         y: Math.sin(m * modAng + this.axis.offset) * this.radius
       };
 
-      this.drawLine(a.x, a.y, b.x, b.y);
+      const color = this.segmentColor(n, m, a, b);
+      this.drawLine(a.x, a.y, b.x, b.y, color);
     }
+  }
+
+  segmentColor() {
+    // .. according to colorPattern
+    return this.color;
   }
 
   drawCircle() {
@@ -215,14 +242,14 @@ class MagicCircle {
     ctx.stroke();
   }
 
-  drawLine(x1, y1, x2, y2) {
+  drawLine(x1, y1, x2, y2, color) {
     const ctx = this.ctx;
 
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
 
-    ctx.strokeStyle = this.color;
+    ctx.strokeStyle = color;
     ctx.stroke();
   }
 
@@ -231,69 +258,93 @@ class MagicCircle {
     const ctrl = document.getElementById('controls');
     const form = document.createElement('form');
 
-    // Elements requiring input event for proper initialization.
+    // Elements for which the parameter requires an 'input' event for init.
     const toInit = [];
-
     for (const param in me.controls) {
-      const value = me[param] ?? me.controls[param].input.value;
-      const input = document.createElement('input');
-      const attributes = me.controls[param].input;
+      me.createInput(form, param, toInit);
+    }
 
-      for (const name in attributes) {
-        input.setAttribute(name, attributes[name]);
+    ctrl.appendChild(form);
+    toInit.forEach(input => input.dispatchEvent(new Event('input', {})));
+  }
+
+  createInput(form, param, toInit) {
+    const me = this;
+    const element = me.controls[param].element ?? 'input';
+
+    const value = me[param] ?? me.controls[param][element].value;
+    const input = document.createElement(element);
+    const props = me.controls[param][element];
+
+    for (const name in props) {
+      if (name === 'options' && element === 'select') {
+        props[name].forEach(option => {
+          const opt = document.createElement('option');
+          opt.value = option;
+          opt.text = option;
+          if (option === value) {
+            opt.selected = true;
+          }
+          input.add(opt);
+        });
+        continue;
       }
+      input.setAttribute(name, props[name]);
+    }
 
-      input.setAttribute('id', param);
-      input.setAttribute('name', param);
-      input.setAttribute('value', value);
+    input.setAttribute('id', param);
+    input.setAttribute('name', param);
+    input.setAttribute(me.controls[param].valueAttr ?? 'value', value);
 
-      // Bindings
-      input.addEventListener('input', function (event) {
-        me.inputHandler.apply(me, [this, param, event]);
-      });
+    // Bindings
+    input.addEventListener('input', function (event) {
+      me.inputHandler.apply(me, [this, param, event]);
+    });
 
-      if (me.controls[param].bindTo) {
-        toInit.push(input);
-      }
+    if (me.controls[param].bindTo) {
+      toInit.push(input);
+    }
 
+    const div = document.createElement('div');
+    div.classList.add('parameter', param);
+
+    if (me.controls[param].label ?? true) {
       const label = document.createElement('label');
       const txt = document.createTextNode(me.controls[param].label ?? param);
       label.setAttribute('for', param);
       label.appendChild(txt);
-
-      const div = document.createElement('div');
-      div.className = 'parameter';
       div.appendChild(label);
-      div.appendChild(input);
-
-      if (attributes.type === 'range') {
-        // Display actual value
-        const output = document.createElement('output');
-        output.setAttribute('name', param + '-output');
-        output.setAttribute('for', param);
-        output.value = value;
-        div.appendChild(output);
-      }
-
-      form.appendChild(div);
     }
 
-    ctrl.appendChild(form);
-    toInit.forEach(input => input.dispatchEvent(new Event('input')));
+    div.appendChild(input);
+
+    if (props.type === 'range') {
+      // Display actual value
+      const output = document.createElement('output');
+      output.setAttribute('name', param + '-output');
+      output.setAttribute('for', param);
+      output.value = value;
+      div.appendChild(output);
+    }
+
+    form.appendChild(div);
   }
 
   inputHandler(input, param) {
+    const value = Number.isNaN(input.valueAsNumber ?? NaN) ?
+            input.value : input.valueAsNumber;
+
     if (param in this) {
-      this[param] = input.valueAsNumber;
+      this[param] = value;
     }
 
     if (this.controls[param].bindTo) {
       const [id, attr] = this.controls[param].bindTo;
-      document.getElementById(id).setAttribute(attr, input.valueAsNumber);
+      document.getElementById(id).setAttribute(attr, value);
     }
 
     if (input.type === 'range')
-      input.nextElementSibling.value = input.valueAsNumber;
+      input.nextElementSibling.value = value;
 
     this.render();
   }
@@ -349,6 +400,8 @@ window.requestAnimationFrame = window.requestAnimationFrame ||
 
 document.addEventListener('DOMContentLoaded', function() {
   const mc = new MagicCircle('f-canvas');
+  window.mc = mc;
+
   console.log('MagicCircle', mc);
 
   mc.render();
