@@ -14,7 +14,7 @@ class MagicCircle {
 
       // Default segment color for monochrome patterns
       color: '#999999',             // lower-case hexadecimal notation only
-      colorPattern: 'monoFixed',
+      colorPattern: 'monoShifted',
 
       // Radial axis
       axis: {
@@ -230,8 +230,35 @@ class MagicCircle {
   }
 
   segmentColor() {
-    // .. according to colorPattern
-    return this.color;
+    switch (this.colorPattern) {
+      case 'monoFixed':
+      case 'monoShifted':
+      default:
+        return this.color;
+    }
+  }
+
+  colorShift() {
+    if (!this._colorTarget || this._colorTarget === this.color) {
+      this.colorTransition();
+    }
+
+    const { step, current } = this._colorTrans;
+    ['r', 'g', 'b'].forEach((c, i) => current[i] += step[i]);
+
+    this.color = rgb2hex(current.map(Math.round));
+  }
+
+  colorTransition() {
+    this._colorTarget = randomColor();
+
+    const [from, to] = [hex2rgb(this.color), hex2rgb(this._colorTarget)];
+    const dist = from.map((c, i) => to[i] - c);
+
+    const n = 300; // ~= 60fps * 5s
+    const step = dist.map(d => d / n);
+
+    this._colorTrans = { from, to, step, current: [...from] };
   }
 
   drawCircle() {
@@ -379,6 +406,10 @@ class MagicCircle {
       const modulus = document.getElementById('modulus');
       modulus.value = modulus.valueAsNumber + me.modStep;
       modulus.dispatchEvent(new Event('input'));
+    }
+
+    if (me.colorPattern === 'monoShifted') {
+      this.colorShift();
     }
 
     me.render();
