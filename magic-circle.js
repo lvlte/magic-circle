@@ -112,8 +112,8 @@ class MagicCircle {
     }
 
     const canvas = document.getElementById(id);
-    canvas.width = Math.floor(screenWidth());
-    canvas.height = Math.floor(screenHeight());
+    canvas.width = Math.floor(windowWidth());
+    canvas.height = Math.floor(windowHeight());
 
     this.radius = Math.floor(Math.min(canvas.width, canvas.height) / 2.5);
 
@@ -394,13 +394,13 @@ class MagicCircle {
 }
 
 
-function screenWidth () {
+function windowWidth () {
   return window.innerWidth ||
           document.documentElement.clientWidth ||
           document.body.clientWidth;
 }
 
-function screenHeight () {
+function windowHeight () {
   return window.innerHeight ||
           document.documentElement.clientHeight ||
           document.body && document.body.clientHeight;
