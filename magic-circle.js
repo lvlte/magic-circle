@@ -46,9 +46,9 @@ class MagicCircle {
           select: {
             options: [
               'monoFixed',
+              'monoShifted',
               'test'
               // ...
-              // monoShifted,
               // segmentLength
               // leastFactor/primeness
             ]
@@ -405,6 +405,19 @@ function screenHeight () {
           document.documentElement.clientHeight ||
           document.body && document.body.clientHeight;
 }
+
+function randomColor() {
+  return '#' + Math.floor(Math.random() * 16777215).toString(16);
+}
+
+function rgb2hex(rgb) {
+  return '#' + rgb.map(c => c.toString(16).padStart(2, '0')).join('');
+}
+
+function hex2rgb(hex) {
+  return hex.slice(1).match(/.{2}/g).map(c => parseInt(c, 16));
+}
+
 
 window.requestAnimationFrame = window.requestAnimationFrame ||
         window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame ||
