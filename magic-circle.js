@@ -41,10 +41,12 @@ class MagicCircle {
         // corresponding (non-nested) parameter, if any.
         colorPattern: {
           element: 'select',
+          handler: 'colorHandler',
           label: 'color pattern',
           select: {
             options: [
               'monoFixed',
+              'test'
               // ...
               // monoShifted,
               // segmentLength
@@ -343,10 +345,23 @@ class MagicCircle {
       document.getElementById(id).setAttribute(attr, value);
     }
 
+    if (this.controls[param].handler) {
+      this[this.controls[param].handler](input, param, value);
+    }
+
     if (input.type === 'range')
       input.nextElementSibling.value = value;
 
-    this.render();
+    if (this.animation.paused)
+      this.render();
+  }
+
+  colorHandler(el, param, value) {
+    if (param === 'colorPattern') {
+      // Hide picker for non-monochrome patterns
+      const picker = document.getElementsByClassName('color')[0];
+      picker.style.display = value.startsWith('mono') ? 'inline-block' : 'none';
+    }
   }
 
   animate() {
