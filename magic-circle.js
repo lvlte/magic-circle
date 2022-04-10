@@ -273,7 +273,9 @@ class MagicCircle {
     const { step, current } = this._colorTrans;
     ['r', 'g', 'b'].forEach((c, i) => current[i] += step[i]);
 
-    this.color = rgb2hex(current.map(Math.round));
+    const color = document.getElementById('color');
+    color.value = rgb2hex(current.map(Math.round));
+    color.dispatchEvent(new Event('input'));
   }
 
   colorTransition() {
@@ -361,6 +363,10 @@ class MagicCircle {
       toInit.push(input);
     }
 
+    if (me.controls[param].handler) {
+      toInit.push(input);
+    }
+
     const div = document.createElement('div');
     div.classList.add('parameter', param);
 
@@ -410,12 +416,10 @@ class MagicCircle {
       this.render();
   }
 
-  colorHandler(el, param, value) {
-    if (param === 'colorPattern') {
-      // Hide picker for non-monochrome patterns
-      const picker = document.getElementsByClassName('color')[0];
-      picker.style.display = value.startsWith('mono') ? 'inline-block' : 'none';
-    }
+  colorHandler(el, param, pattern) {
+    // Hide picker for non-monochrome patterns
+    const picker = document.getElementsByClassName('color')[0];
+    picker.style.display = pattern.startsWith('mono') ? 'inline-block' : 'none';
   }
 
   animate() {
