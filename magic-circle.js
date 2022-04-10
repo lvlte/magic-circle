@@ -13,8 +13,9 @@ class MagicCircle {
       modStep: 0.05,
 
       // Default segment color for monochrome patterns
-      color: '#999999',             // lower-case hexadecimal notation only
-      colorPattern: 'monoShifted',
+      color: '#999999',               // lower-case hexadecimal notation only
+      colorPattern: 'segmentLength',  // @see options below
+      colorPalette: COLOR_WHEEL,
 
       // Radial axis
       axis: {
@@ -24,7 +25,7 @@ class MagicCircle {
           x: 0,                 // -x offset
           y: 0                  // -y offset
         },
-        color: '#999',
+        color: '#555',
         label: {
           display: true,
           color: '#b8d0b2',
@@ -47,9 +48,8 @@ class MagicCircle {
             options: [
               'monoFixed',
               'monoShifted',
-              'test'
+              'segmentLength'
               // ...
-              // segmentLength
               // leastFactor/primeness
             ]
           }
@@ -116,6 +116,7 @@ class MagicCircle {
     canvas.height = Math.floor(windowHeight());
 
     this.radius = Math.floor(Math.min(canvas.width, canvas.height) / 2.5);
+    this.diameter = 2*this.radius;
 
     this.centerX = Math.floor(canvas.width / 2);
     this.centerY = Math.floor(canvas.height / 2);
@@ -229,12 +230,38 @@ class MagicCircle {
     }
   }
 
-  segmentColor() {
+  segmentColor(n, m, a, b) {
     switch (this.colorPattern) {
       case 'monoFixed':
       case 'monoShifted':
       default:
         return this.color;
+
+      case 'segmentLength': {
+        if (this.colorPalette.length < 2) {
+          return this.colorPalette[0] ?? this.color;
+        }
+
+        const dx = Math.abs(a.x - b.x);
+        const dy = Math.abs(a.y - b.y);
+
+        // This is to prevent rounding issues
+        const len = Math.min(this.diameter-1, Math.hypot(dx, dy));
+
+        const intervals = this.colorPalette.length - 1;
+        const cx = len*intervals / this.diameter;
+
+        // Expanding the curve of f(len)=color
+        const ecx = cx*Math.sqrt(cx/intervals);
+
+        const [i1, i2] = [Math.floor(ecx), Math.ceil(ecx)];
+        const [rgb1, rgb2] = [this.colorPalette[i1], this.colorPalette[i2]];
+
+        const r = ecx - i1;
+        const rgb = rgb1.map((c, i) => Math.round(c + r*(rgb2[i]-c)) );
+
+        return rgb2hex(rgb);
+      }
     }
   }
 
@@ -424,6 +451,9 @@ class MagicCircle {
 
 }
 
+/**
+ * Helper/utils functions
+ */
 
 function windowWidth () {
   return window.innerWidth ||
@@ -453,6 +483,26 @@ function hex2rgb(hex) {
 window.requestAnimationFrame = window.requestAnimationFrame ||
         window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame ||
         window.oRequestAnimationFrame || window.msRequestAnimationFrame;
+
+/**
+ * Color Palettes
+ */
+
+// Hues
+const COLOR_WHEEL = [
+  [255,   0, 255],  // magenta
+  [127,   0, 255],  // blueMagenta
+  [  0,   0, 255],  // blue
+  [  0, 127, 255],  // blueCyan
+  [  0, 255, 255],  // cyan
+  [  0, 255, 127],  // greenCyan
+  [  0, 255,   0],  // green
+  [127, 255,   0],  // greenYellow
+  [255, 255,   0],  // yellow
+  [255, 127,   0],  // orange
+  [255,   0,   0],  // red
+  [255,   0, 127],  // redMagenta
+];
 
 
 // Testing ..
@@ -489,3 +539,10 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
 });
+
+
+
+      // // linear gradient from start to end of line
+      // const grad = this.ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+      // grad.addColorStop(0, start);
+      // grad.addColorStop(1, end);
