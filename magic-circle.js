@@ -544,9 +544,3 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
-
-
-      // // linear gradient from start to end of line
-      // const grad = this.ctx.createLinearGradient(a.x, a.y, b.x, b.y);
-      // grad.addColorStop(0, start);
-      // grad.addColorStop(1, end);
