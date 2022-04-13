@@ -502,6 +502,13 @@ class MagicCircle {
     picker.style.display = pattern.startsWith('mono') ? 'inline-block' : 'none';
   }
 
+  toggleAnimation() {
+    this.animation.paused = !this.animation.paused;
+    if (!this.animation.paused) {
+      this.animate();
+    }
+  }
+
   animate() {
     const me = this;
 
@@ -524,9 +531,7 @@ class MagicCircle {
     if (me.animation.paused)
       return;
 
-    requestAnimationFrame(function() {
-      me.animate.call(me);
-    });
+    requestAnimationFrame(me.animate.bind(me));
   }
 
 }
@@ -588,35 +593,19 @@ const COLOR_WHEEL = [
 // Testing ..
 
 document.addEventListener('DOMContentLoaded', function() {
-  const mc = new MagicCircle('f-canvas');
-  window.mc = mc;
+  const mc = new MagicCircle('f-canvas', {
+    multiplier: 0,
+    controls: false,
+  });
 
+  window.mc = mc;
   console.log('MagicCircle', mc);
 
   mc.render();
-  mc.addControls();
 
-  mc.ctx.canvas.addEventListener('click', function () {
-    // mc.multiplier += mc.mulStep;
-    // mc.render();
-
-    mc.animation.paused = !mc.animation.paused;
-
-    if (!mc.animation.paused)
-      mc.animate();
-
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.ctrlKey || e.shiftKey || e.altKey)
-      return;
-
-    if (e.target.tagName === 'INPUT')
-      return;
-
-    mc.multiplier += mc.mulStep;
-    mc.render();
-  });
-
+  mc.ctx.canvas.addEventListener('click', mc.toggleAnimation.bind(mc));
 });
+
+
+
 
