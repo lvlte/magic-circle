@@ -9,7 +9,7 @@ class MagicCircle {
 
   // Default segment color for monochrome patterns
   _color = '#999999';               // lower-case hexadecimal notation only
-  _colorPattern = 'segmentLength';  // @see options below
+  _colorPattern = 'segmentLength';  // @see input options below
 
   colorPalette = COLOR_WHEEL;
 
@@ -32,7 +32,9 @@ class MagicCircle {
     }
   };
 
-  controls = {
+  controls = true;           // whether or not to create controls (DOM inputs).
+
+  inputs = {
     // Create <input/> element if not told otherwise.
     // For each element, the id, name and value attributes are bound to the
     // corresponding (non-nested) _<parameter>, if any.
@@ -114,6 +116,10 @@ class MagicCircle {
     this.centerY = Math.floor(canvas.height / 2);
 
     this.ctx = canvas.getContext('2d');
+
+    if (this.controls) {
+      this.addControls();
+    }
   }
 
   set multiplier(value) {
@@ -378,21 +384,23 @@ class MagicCircle {
 
     // Elements for which the parameter requires an 'input' event for init.
     const toInit = [];
-    for (const param in me.controls) {
+    for (const param in me.inputs) {
       me.createInput(form, param, toInit);
     }
 
     ctrl.appendChild(form);
     toInit.forEach(input => input.dispatchEvent(new Event('input', {})));
+
+    me.addControls = () => 'no-op'; // prevent further execution.
   }
 
   createInput(form, param, toInit) {
     const me = this;
-    const element = me.controls[param].element ?? 'input';
+    const element = me.inputs[param].element ?? 'input';
 
-    const value = me[param] ?? me.controls[param][element].value;
+    const value = me[param] ?? me.inputs[param][element].value;
     const input = document.createElement(element);
-    const props = me.controls[param][element];
+    const props = me.inputs[param][element];
 
     for (const name in props) {
       if (name === 'options' && element === 'select') {
@@ -412,27 +420,27 @@ class MagicCircle {
 
     input.setAttribute('id', param);
     input.setAttribute('name', param);
-    input.setAttribute(me.controls[param].valueAttr ?? 'value', value);
+    input.setAttribute(me.inputs[param].valueAttr ?? 'value', value);
 
     // Bindings
     input.addEventListener('input', function (event) {
       me.inputHandler.apply(me, [this, param, event]);
     });
 
-    if (me.controls[param].bindTo) {
+    if (me.inputs[param].bindTo) {
       toInit.push(input);
     }
 
-    if (me.controls[param].handler) {
+    if (me.inputs[param].handler) {
       toInit.push(input);
     }
 
     const div = document.createElement('div');
     div.classList.add('parameter', param);
 
-    if (me.controls[param].label ?? true) {
+    if (me.inputs[param].label ?? true) {
       const label = document.createElement('label');
-      const txt = document.createTextNode(me.controls[param].label ?? param);
+      const txt = document.createTextNode(me.inputs[param].label ?? param);
       label.setAttribute('for', param);
       label.appendChild(txt);
       div.appendChild(label);
@@ -461,13 +469,13 @@ class MagicCircle {
       this[field] = value;
     }
 
-    if (this.controls[param].bindTo) {
-      const [id, attr] = this.controls[param].bindTo;
+    if (this.inputs[param].bindTo) {
+      const [id, attr] = this.inputs[param].bindTo;
       document.getElementById(id).setAttribute(attr, value);
     }
 
-    if (this.controls[param].handler) {
-      this[this.controls[param].handler](input, param, value);
+    if (this.inputs[param].handler) {
+      this[this.inputs[param].handler](input, param, value);
     }
 
     if (input.type === 'range')
@@ -487,12 +495,12 @@ class MagicCircle {
     const me = this;
 
     // eslint-disable-next-line no-constant-condition
-    if (true || me.controls.multiplier.toggle) {
+    if (true || me.inputs.multiplier.toggle) {
       me.multiplier += me.mulStep;
     }
 
     // eslint-disable-next-line no-constant-condition
-    if (true || me.controls.modulus.toggle) {
+    if (true || me.inputs.modulus.toggle) {
       me.modulus += me.modStep;
     }
 
