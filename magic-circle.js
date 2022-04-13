@@ -1,113 +1,105 @@
 
 class MagicCircle {
 
-  constructor (id, settings) {
+  _multiplier = 2;
+  _modulus = 10;
 
-    // Default settings
-    const defaults = {
+  _mulStep = 0.005;
+  _modStep = 0.05;
 
-      multiplier: 2,
-      modulus: 10,
+  // Default segment color for monochrome patterns
+  _color = '#999999';               // lower-case hexadecimal notation only
+  _colorPattern = 'segmentLength';  // @see options below
 
-      mulStep: 0.005,
-      modStep: 0.05,
+  colorPalette = COLOR_WHEEL;
 
-      // Default segment color for monochrome patterns
-      color: '#999999',               // lower-case hexadecimal notation only
-      colorPattern: 'segmentLength',  // @see options below
-      colorPalette: COLOR_WHEEL,
+  // Radial axis
+  axis = {
+    display: true,
+    offset: -Math.PI/2,     // angular offset
+    origin: {
+      x: 0,                 // -x offset
+      y: 0                  // -y offset
+    },
+    color: '#555',
+    label: {
+      display: true,
+      color: '#b8d0b2',
+      room: 15,
+      threshold: 7,         // don't display if actual fontSize goes below
+      fontSize: 12,         // (size ref.) reduced as modulus increases
+      fontFamily: 'Arial'
+    }
+  };
 
-      // Radial axis
-      axis: {
-        display: true,
-        offset: -Math.PI/2,     // angular offset
-        origin: {
-          x: 0,                 // -x offset
-          y: 0                  // -y offset
-        },
-        color: '#555',
-        label: {
-          display: true,
-          color: '#b8d0b2',
-          room: 15,
-          threshold: 7,         // don't display if actual fontSize goes below
-          fontSize: 12,         // (size ref.) reduced as modulus increases
-          fontFamily: 'Arial'
-        }
-      },
-
-      controls: {
-        // Create <input/> element if not told otherwise.
-        // For each element, the id, name and value attributes are bound to the
-        // corresponding (non-nested) parameter, if any.
-        colorPattern: {
-          element: 'select',
-          handler: 'colorHandler',
-          label: 'color pattern',
-          select: {
-            options: [
-              'monoFixed',
-              'monoShifted',
-              'segmentLength'
-              // ...
-              // leastFactor/primeness
-            ]
-          }
-        },
-        color: {
-          label: false,
-          input: {
-            type: 'color'
-          }
-        },
-        multiplier: {
-          input: {
-            type: 'range',
-            min: 0,
-            max: 3000
-          }
-        },
-        modulus: {
-          input: {
-            type: 'range',
-            min: 2,
-            max: 3000
-          }
-        },
-        mulStep: {
-          bindTo: ['multiplier', 'step'],
-          label: 'multiplier-step',
-          input: {
-            type: 'range',
-            min: 0.005,
-            max: 1,
-            step: 0.005
-          }
-        },
-        modStep: {
-          bindTo: ['modulus', 'step'],
-          label: 'modulus-step',
-          input: {
-            type: 'range',
-            min: 0.05,
-            max: 1,
-            step: 0.05
-          }
-        }
-      },
-
-      animation: {
-        paused: true
+  controls = {
+    // Create <input/> element if not told otherwise.
+    // For each element, the id, name and value attributes are bound to the
+    // corresponding (non-nested) _<parameter>, if any.
+    colorPattern: {
+      element: 'select',
+      handler: 'colorHandler',
+      label: 'color pattern',
+      select: {
+        options: [
+          'monoFixed',
+          'monoShifted',
+          'segmentLength'
+          // ...
+          // leastFactor/primeness
+        ]
+      }
+    },
+    color: {
+      label: false,
+      input: {
+        type: 'color'
+      }
+    },
+    multiplier: {
+      input: {
+        type: 'range',
+        min: 0,
+        max: 3000
+      }
+    },
+    modulus: {
+      input: {
+        type: 'range',
+        min: 2,
+        max: 3000
+      }
+    },
+    mulStep: {
+      bindTo: ['multiplier', 'step'],
+      label: 'multiplier-step',
+      input: {
+        type: 'range',
+        min: 0.005,
+        max: 1,
+        step: 0.005
+      }
+    },
+    modStep: {
+      bindTo: ['modulus', 'step'],
+      label: 'modulus-step',
+      input: {
+        type: 'range',
+        min: 0.05,
+        max: 1,
+        step: 0.05
       }
     }
+  };
 
-    // Apply defaults settings.
-    for (const prop in defaults) {
-      this[prop] = defaults[prop];
-    }
+  animation = {
+    paused: true
+  };
 
-    // Override with passed-in settings if any.
-    for (const prop in settings) {
+  constructor (id, settings) {
+
+    // Override defaults with passed-in settings if any.
+    for (const prop in {id, ...settings}) {
       this[prop] = settings[prop];
     }
 
@@ -122,6 +114,76 @@ class MagicCircle {
     this.centerY = Math.floor(canvas.height / 2);
 
     this.ctx = canvas.getContext('2d');
+  }
+
+  set multiplier(value) {
+    if (!this.updateInput('multiplier', value)) {
+      this._multiplier = value;
+    }
+  }
+
+  get multiplier() {
+    return this._multiplier;
+  }
+
+  set modulus(value) {
+    if (!this.updateInput('modulus', value)) {
+      this._modulus = value;
+    }
+  }
+
+  get modulus() {
+    return this._modulus;
+  }
+
+  set mulStep(value) {
+    if (!this.updateInput('mulStep', value)) {
+      this._mulStep = value;
+    }
+  }
+
+  get mulStep() {
+    return this._mulStep;
+  }
+
+  set modStep(value) {
+    if (!this.updateInput('modStep', value)) {
+      this._modStep = value;
+    }
+  }
+
+  get modStep() {
+    return this._modStep;
+  }
+
+  set color(value) {
+    if (!this.updateInput('color', value)) {
+      this._color = value;
+    }
+  }
+
+  get color() {
+    return this._color;
+  }
+
+  set colorPattern(value) {
+    if (!this.updateInput('colorPattern', value)) {
+      this._colorPattern = value;
+    }
+  }
+
+  get colorPattern() {
+    return this._colorPattern;
+  }
+
+  updateInput(param, value) {
+    const element = document.getElementById(param);
+    if (!element) {
+      return false;
+    }
+    element.value = value;
+    element.dispatchEvent(new Event('input'));
+    return true;
   }
 
   clearCan() {
@@ -273,9 +335,7 @@ class MagicCircle {
     const { step, current } = this._colorTrans;
     ['r', 'g', 'b'].forEach((c, i) => current[i] += step[i]);
 
-    const color = document.getElementById('color');
-    color.value = rgb2hex(current.map(Math.round));
-    color.dispatchEvent(new Event('input'));
+    this.color = rgb2hex(current.map(Math.round));
   }
 
   colorTransition() {
@@ -396,8 +456,9 @@ class MagicCircle {
     const value = Number.isNaN(input.valueAsNumber ?? NaN) ?
             input.value : input.valueAsNumber;
 
-    if (param in this) {
-      this[param] = value;
+    const field = '_' + param;
+    if (field in this) {
+      this[field] = value;
     }
 
     if (this.controls[param].bindTo) {
@@ -427,20 +488,16 @@ class MagicCircle {
 
     // eslint-disable-next-line no-constant-condition
     if (true || me.controls.multiplier.toggle) {
-      const multiplier = document.getElementById('multiplier');
-      multiplier.value = multiplier.valueAsNumber + me.mulStep;
-      multiplier.dispatchEvent(new Event('input'));
+      me.multiplier += me.mulStep;
     }
 
     // eslint-disable-next-line no-constant-condition
     if (true || me.controls.modulus.toggle) {
-      const modulus = document.getElementById('modulus');
-      modulus.value = modulus.valueAsNumber + me.modStep;
-      modulus.dispatchEvent(new Event('input'));
+      me.modulus += me.modStep;
     }
 
     if (me.colorPattern === 'monoShifted') {
-      this.colorShift();
+      me.colorShift();
     }
 
     me.render();
