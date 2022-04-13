@@ -394,6 +394,17 @@ class MagicCircle {
     me.addControls = () => 'no-op'; // prevent further execution.
   }
 
+  displayControls(display=true) {
+    const ctrl = document.getElementById('controls');
+    if (!display) {
+      ctrl.style.display = 'none';
+    }
+    else {
+      this.addControls();
+      ctrl.style.display = 'block';
+    }
+  }
+
   createInput(form, param, toInit) {
     const me = this;
     const element = me.inputs[param].element ?? 'input';
