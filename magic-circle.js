@@ -1,6 +1,9 @@
 
 class MagicCircle {
 
+  // These _fields (beginning with underscore) have getters/setters, they are
+  // bound to their respective input elements if any (when controls == true).
+
   _multiplier = 2;
   _modulus = 10;
 
@@ -11,7 +14,11 @@ class MagicCircle {
   _color = '#999999';               // lower-case hexadecimal notation only
   _colorPattern = 'segmentLength';  // @see input options below
 
-  colorPalette = COLOR_WHEEL;
+  colorPalettes = COLOR_PALETTES;
+  paletteVariants = false;           // whether to create palette variants
+
+  // Selected palette
+  _colorPalette = Object.keys(this.colorPalettes)[0];
 
   // Radial axis
   axis = {
@@ -58,6 +65,13 @@ class MagicCircle {
         type: 'color'
       }
     },
+    colorPalette: {
+      element: 'select',
+      label: 'color palette',
+      select: {
+        options: Object.keys(this.colorPalettes)
+      }
+    },
     multiplier: {
       input: {
         type: 'range',
@@ -100,11 +114,6 @@ class MagicCircle {
 
   constructor (id, settings) {
 
-    // Override defaults with passed-in settings if any.
-    for (const prop in {id, ...settings}) {
-      this[prop] = settings[prop];
-    }
-
     const canvas = document.getElementById(id);
     canvas.width = Math.floor(windowWidth());
     canvas.height = Math.floor(windowHeight());
@@ -115,7 +124,27 @@ class MagicCircle {
     this.centerX = Math.floor(canvas.width / 2);
     this.centerY = Math.floor(canvas.height / 2);
 
+    // Override defaults with passed-in settings if any.
+    for (const prop in {id, ...settings}) {
+      this[prop] = settings[prop];
+    }
+
     this.ctx = canvas.getContext('2d');
+
+    if (this.paletteVariants) {
+      const palettes = this.colorPalettes;
+      const variants = {};
+      for (const pal in palettes) {
+        for (let i=0; i<palettes[pal].length; i++) {
+          variants[`${pal}_${i}`] = rotate([...palettes[pal]], i, true);
+        }
+      }
+      this.colorPalettes = variants;
+      this.inputs.colorPalette.select.options = Object.keys(variants)
+      if (!(this.colorPalette in this.colorPalettes)) {
+        this.colorPalette += '_0';
+      }
+    }
 
     if (this.controls) {
       this.addControls();
@@ -180,6 +209,16 @@ class MagicCircle {
 
   get colorPattern() {
     return this._colorPattern;
+  }
+
+  set colorPalette(value) {
+    if (!this.updateInput('colorPalette', value)) {
+      this._colorPalette = value;
+    }
+  }
+
+  get colorPalette() {
+    return this._colorPalette;
   }
 
   updateInput(param, value) {
@@ -306,8 +345,9 @@ class MagicCircle {
         return this.color;
 
       case 'segmentLength': {
-        if (this.colorPalette.length < 2) {
-          return this.colorPalette[0] ?? this.color;
+        const palette = this.colorPalettes[this.colorPalette];
+        if (palette.length < 2) {
+          return palette[0] ?? this.color;
         }
 
         const dx = Math.abs(a.x - b.x);
@@ -316,14 +356,14 @@ class MagicCircle {
         // This is to prevent rounding issues
         const len = Math.min(this.diameter-1, Math.hypot(dx, dy));
 
-        const intervals = this.colorPalette.length - 1;
+        const intervals = palette.length - 1;
         const cx = len*intervals / this.diameter;
 
         // Expanding the curve of f(len)=color
         const ecx = cx*Math.sqrt(cx/intervals);
 
         const [i1, i2] = [Math.floor(ecx), Math.ceil(ecx)];
-        const [rgb1, rgb2] = [this.colorPalette[i1], this.colorPalette[i2]];
+        const [rgb1, rgb2] = [palette[i1], palette[i2]];
 
         const r = ecx - i1;
         const rgb = rgb1.map((c, i) => Math.round(c + r*(rgb2[i]-c)) );
@@ -389,7 +429,7 @@ class MagicCircle {
     }
 
     ctrl.appendChild(form);
-    toInit.forEach(input => input.dispatchEvent(new Event('input', {})));
+    toInit.forEach(input => input.dispatchEvent(new Event('input')));
 
     me.addControls = () => 'no-op'; // prevent further execution.
   }
@@ -497,9 +537,19 @@ class MagicCircle {
   }
 
   colorHandler(el, param, pattern) {
-    // Hide picker for non-monochrome patterns
+    // Hide palette selector for monochrome patterns.
+    // Hide picker for non-monochrome patterns.
     const picker = document.getElementsByClassName('color')[0];
-    picker.style.display = pattern.startsWith('mono') ? 'inline-block' : 'none';
+    const selector = document.getElementsByClassName('colorPalette')[0];
+
+    if (pattern.startsWith('mono')) {
+      picker.style.display = 'inline-block';
+      selector.style.display = 'none';
+    }
+    else {
+      picker.style.display = 'none';
+      selector.style.display = 'block';
+    }
   }
 
   toggleAnimation() {
@@ -564,6 +614,23 @@ function hex2rgb(hex) {
   return hex.slice(1).match(/.{2}/g).map(c => parseInt(c, 16));
 }
 
+function rotate(array, r=1, rev=false) {
+  if (array.length < 2 || r < 1)
+    return array;
+
+  const f = rev ? () => {
+    array.unshift(array.pop());
+    return array;
+  } : () => {
+    array.push(array.shift());
+    return array;
+  };
+
+  do f(array, rev, r--)
+  while (r > 0);
+
+  return array;
+}
 
 window.requestAnimationFrame = window.requestAnimationFrame ||
         window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame ||
@@ -573,29 +640,73 @@ window.requestAnimationFrame = window.requestAnimationFrame ||
  * Color Palettes
  */
 
-// Hues
-const COLOR_WHEEL = [
-  [255,   0, 255],  // magenta
-  [127,   0, 255],  // blueMagenta
-  [  0,   0, 255],  // blue
-  [  0, 127, 255],  // blueCyan
-  [  0, 255, 255],  // cyan
-  [  0, 255, 127],  // greenCyan
-  [  0, 255,   0],  // green
-  [127, 255,   0],  // greenYellow
-  [255, 255,   0],  // yellow
-  [255, 127,   0],  // orange
-  [255,   0,   0],  // red
-  [255,   0, 127],  // redMagenta
-];
+const COLOR_PALETTES = {
+
+  // Hues
+  color_wheel: [
+    [255,   0, 255],  // magenta
+    [127,   0, 255],  // blueMagenta
+    [  0,   0, 255],  // blue
+    [  0, 127, 255],  // blueCyan
+    [  0, 255, 255],  // cyan
+    [  0, 255, 127],  // greenCyan
+    [  0, 255,   0],  // green
+    [127, 255,   0],  // greenYellow
+    [255, 255,   0],  // yellow
+    [255, 127,   0],  // orange
+    [255,   0,   0],  // red
+    [255,   0, 127],  // redMagenta
+  ],
+
+  // Monochrome Combinations
+
+  mono_ocean: [
+    [141, 176, 198],
+    [ 95, 136, 165],
+    [205, 212, 212],
+    [ 50,  65,  98],
+    [109, 113, 186]
+  ],
+
+  // Complementary combinations
+
+  dyadic: [
+    [160,  25,  16],
+    [229, 113,  75],
+    [ 29,  73, 101],
+    [ 47, 164, 168],
+    [190,  78,  50],
+  ],
+
+  triadic: [
+    [242, 179,   7],
+    [163,  42,  36],
+    [ 17, 148, 143],
+    [ 45,  94, 116],
+    [190,  78,  50]
+  ],
+
+  triadic_split: [
+    [172,  90,  86],
+    [224, 196,  78],
+    [190, 159, 122],
+    [ 76, 132,  68],
+    [219, 125, 141]
+  ]
+
+}
+
 
 
 // Testing ..
 
 document.addEventListener('DOMContentLoaded', function() {
   const mc = new MagicCircle('f-canvas', {
-    multiplier: 0,
-    controls: false,
+    multiplier: 100,
+    modulus: 838,
+    controls: true,
+    paletteVariants: true,
+    colorPalette: 'dyadic_1'
   });
 
   window.mc = mc;
