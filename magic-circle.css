@@ -21,6 +21,7 @@ body {
   color: #fff;
   font-family: sans-serif;
   font-size: 11px;
+  height: 20px;
 }
 
 #controls .parameter > label {
@@ -41,8 +42,17 @@ body {
   background-color: #252f3e;
 }
 
+#controls .parameter select:not(.short) {
+  width: 164px;
+}
+
 #controls .parameter input[type=number] {
-  width: 160px;
+  width: 156px;
+  padding: 2px;
+}
+
+#controls .parameter input[type=range] {
+  height: 16px;
 }
 
 #controls .parameter > output {

@@ -551,7 +551,7 @@ class MagicCircle {
       this.render();
   }
 
-  colorHandler(el, param, pattern) {
+  colorHandler(input, param, pattern) {
     // Hide palette selector for monochrome patterns.
     // Hide picker for non-monochrome patterns.
     const picker = document.getElementsByClassName('color')[0];
@@ -560,10 +560,12 @@ class MagicCircle {
     if (pattern.startsWith('mono')) {
       picker.style.display = 'inline-block';
       selector.style.display = 'none';
+      input.classList.add('short');
     }
     else {
       picker.style.display = 'none';
       selector.style.display = 'block';
+      input.classList.remove('short');
     }
   }
 
