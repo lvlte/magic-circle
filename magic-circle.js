@@ -112,6 +112,9 @@ class MagicCircle {
     paused: true
   };
 
+  // Track the last input timestamp;
+  #inputTimeStamp = 0;
+
   constructor (id, settings) {
 
     const canvas = document.getElementById(id);
@@ -499,19 +502,31 @@ class MagicCircle {
 
     div.appendChild(input);
 
-    if (props.type === 'range') {
-      // Display actual value
+    const toggle = {range: 'number', number: 'range'};
+    if (props.type in toggle) {
+      // Display actual value for range input (create the output element in both
+      // cases as we allow to switch from one to the other).
       const output = document.createElement('output');
       output.setAttribute('name', param + '-output');
       output.setAttribute('for', param);
       output.value = value;
+      output.style.display = props.type === 'range' ? 'block' : 'none';
       div.appendChild(output);
+      div.addEventListener('dblclick', function(event) {
+        if (me.animation.paused && event.timeStamp - me.#inputTimeStamp < 200)
+          return;
+        const type = toggle[input.getAttribute('type')];
+        input.setAttribute('type', type);
+        output.style.display = type === 'range' ? 'block' : 'none';
+      });
     }
 
     form.appendChild(div);
   }
 
-  inputHandler(input, param) {
+  inputHandler(input, param, event) {
+    this.#inputTimeStamp = event.timeStamp;
+
     const value = Number.isNaN(input.valueAsNumber ?? NaN) ?
             input.value : input.valueAsNumber;
 
@@ -529,7 +544,7 @@ class MagicCircle {
       this[this.inputs[param].handler](input, param, value);
     }
 
-    if (input.type === 'range')
+    if (input.type === 'range' || input.type === 'number')
       input.nextElementSibling.value = value;
 
     if (this.animation.paused)
