@@ -365,7 +365,9 @@ class MagicCircle {
         const cx = len*intervals / this.diameter;
 
         // Expanding the curve of f(len)=color
-        const ecx = cx*Math.sqrt(cx/intervals);
+        // const ecx = palette.length**(cx/intervals) - 1; // exponential
+        const ecx = cx*Math.sqrt(cx/intervals);         // gentle exp
+        // const ecx = cx;                                 // linear
 
         const [i1, i2] = [Math.floor(ecx), Math.ceil(ecx)];
         const [rgb1, rgb2] = [palette[i1], palette[i2]];
