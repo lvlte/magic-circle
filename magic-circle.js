@@ -155,6 +155,7 @@ class MagicCircle {
   }
 
   set multiplier(value) {
+    value = Math.round(value * 1000) / 1000;
     if (!this.updateInput('multiplier', value)) {
       this._multiplier = value;
     }
@@ -165,6 +166,7 @@ class MagicCircle {
   }
 
   set modulus(value) {
+    value = Math.round(value * 1000) / 1000;
     if (!this.updateInput('modulus', value)) {
       this._modulus = value;
     }
