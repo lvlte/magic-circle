@@ -53,9 +53,8 @@ class MagicCircle {
         options: [
           'monoFixed',
           'monoShifted',
-          'segmentLength'
-          // ...
-          // leastFactor/primeness
+          'segmentLength',
+          'leastPrimeFactor'
         ]
       }
     },
@@ -82,7 +81,7 @@ class MagicCircle {
     modulus: {
       input: {
         type: 'range',
-        min: 2,
+        min: 1,
         max: 3000
       }
     },
@@ -283,7 +282,7 @@ class MagicCircle {
     if (this.axis.display)
       this.drawCircle();
 
-    if (this.axis.label.display) {
+    if (this.axis.label.display && this.modulus > 1) {
       const fontSize = this.labelFontSize();
 
       if (fontSize < this.axis.label.threshold)
@@ -376,6 +375,10 @@ class MagicCircle {
         const rgb = rgb1.map((c, i) => Math.round(c + r*(rgb2[i]-c)) );
 
         return rgb2hex(rgb);
+      }
+
+      case 'leastPrimeFactor': {
+        return this.lpfPalette[n];
       }
     }
   }
@@ -556,21 +559,50 @@ class MagicCircle {
   }
 
   colorHandler(input, param, pattern) {
-    // Hide palette selector for monochrome patterns.
     // Hide picker for non-monochrome patterns.
     const picker = document.getElementsByClassName('color')[0];
-    const selector = document.getElementsByClassName('colorPalette')[0];
-
     if (pattern.startsWith('mono')) {
       picker.style.display = 'inline-block';
-      selector.style.display = 'none';
       input.classList.add('short');
     }
     else {
       picker.style.display = 'none';
-      selector.style.display = 'block';
       input.classList.remove('short');
     }
+
+    // Show palette selector only for segmentLength pattern.
+    const selector = document.getElementsByClassName('colorPalette')[0];
+    selector.style.display = pattern === 'segmentLength' ? 'block' : 'none';
+
+    // Create custom palette for leastPrimeFactor pattern if not already done.
+    if (pattern === 'leastPrimeFactor' && !this.lpfPalette) {
+      this.lpfPalette = this.lpfGenPalette();
+    }
+  }
+
+  lpfGenPalette() {
+    const len = this.inputs.modulus.input.max;
+    const colors = rotate([...COLOR_PALETTES.triadic], 4);
+    const pal = Array(len);
+
+    const fillpal = (n, color) => {
+      const step = n;
+      do if (!pal[n]) pal[n] = color;
+      while ((n+=step) < len);
+    };
+
+    pal[1] = '#000000';
+    fillpal(2, '#555555');
+
+    let n = 3;
+    for (n; colors.length; n+=2) {
+      fillpal(n, rgb2hex(colors.shift()));
+    }
+    for (n; n<len; n+=2) {
+      fillpal(n, randomColor());
+    }
+
+    return pal;
   }
 
   toggleAnimation() {
@@ -723,10 +755,11 @@ const COLOR_PALETTES = {
 
 document.addEventListener('DOMContentLoaded', function() {
   const mc = new MagicCircle('f-canvas', {
-    multiplier: 100,
-    modulus: 838,
+    multiplier: 2,
+    modulus: 10,
     controls: true,
     paletteVariants: true,
+    colorPattern: 'leastPrimeFactor',
     colorPalette: 'dyadic_1'
   });
 
