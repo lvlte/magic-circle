@@ -23,10 +23,10 @@ class MagicCircle {
   // Radial axis
   axis = {
     display: true,
-    offset: -Math.PI/2,     // angular offset
-    origin: {
-      x: 0,                 // -x offset
-      y: 0                  // -y offset
+    offset: {
+      θ: -Math.PI/2,        // angular offset
+      x: 0,
+      y: 0
     },
     color: '#555',
     label: {
@@ -114,23 +114,18 @@ class MagicCircle {
   // Track the last input timestamp;
   #inputTimeStamp = 0;
 
+  // Canvas origin
+  #origin = { x: 0, y: 0 };
+
   constructor (id, settings) {
-
-    const canvas = document.getElementById(id);
-    canvas.width = Math.floor(windowWidth());
-    canvas.height = Math.floor(windowHeight());
-
-    this.radius = Math.floor(Math.min(canvas.width, canvas.height) / 2.5);
-    this.diameter = 2*this.radius;
-
-    this.centerX = Math.floor(canvas.width / 2);
-    this.centerY = Math.floor(canvas.height / 2);
+    this.id = id;
 
     // Override defaults with passed-in settings if any.
     for (const prop in {id, ...settings}) {
       this[prop] = settings[prop];
     }
 
+    const canvas = document.getElementById(id);
     this.ctx = canvas.getContext('2d');
 
     if (this.paletteVariants) {
@@ -150,6 +145,28 @@ class MagicCircle {
 
     if (this.controls) {
       this.addControls();
+    }
+
+    this.initAxis();
+    window.addEventListener('resize', this.initAxis.bind(this));
+  }
+
+  initAxis () {
+    const can = this.ctx.canvas;
+    can.width = Math.floor(windowWidth());
+    can.height = Math.floor(windowHeight());
+
+    this.radius = Math.floor(Math.min(can.width, can.height) / 2.5);
+    this.diameter = 2*this.radius;
+
+    this.axis.cx = Math.floor(can.width/2 + this.axis.offset.x);
+    this.axis.cy = Math.floor(can.height/2 + this.axis.offset.y);
+
+    this.#origin.x = 0;
+    this.#origin.y = 0;
+
+    if (this.animation.paused) {
+      this.render();
     }
   }
 
@@ -247,18 +264,18 @@ class MagicCircle {
   }
 
   translateTo(x, y) {
-    const dx = x - this.axis.origin.x;
-    const dy = y - this.axis.origin.y;
+    const dx = x - this.#origin.x;
+    const dy = y - this.#origin.y;
 
-    this.axis.origin.x = x;
-    this.axis.origin.y = y;
+    this.#origin.x = x;
+    this.#origin.y = y;
 
     this.ctx.translate(dx, dy);
   }
 
   setPoints() {
     const modAng = 2*Math.PI/this.modulus;
-    let angle = this.axis.offset;
+    let angle = this.axis.offset.θ;
     this.points = [];
 
     for (let n=0; n<this.modulus; n++) {
@@ -277,7 +294,7 @@ class MagicCircle {
     if (!this.axis.display && !this.axis.label.display)
       return;
 
-    this.translateTo(this.centerX, this.centerY);
+    this.translateTo(this.axis.cx, this.axis.cy);
 
     if (this.axis.display)
       this.drawCircle();
@@ -325,15 +342,15 @@ class MagicCircle {
     const points = this.points;
     const modAng = 2*Math.PI/this.modulus;
 
-    this.translateTo(this.centerX, this.centerY);
+    this.translateTo(this.axis.cx, this.axis.cy);
 
     for (let n=1; n<points.length; n++) {
       const m = (n * this.multiplier) % this.modulus;
 
       const a = points[n];
       const b = Math.floor(m) === m ? points[m] : {
-        x: Math.cos(m * modAng + this.axis.offset) * this.radius,
-        y: Math.sin(m * modAng + this.axis.offset) * this.radius
+        x: Math.cos(m * modAng + this.axis.offset.θ) * this.radius,
+        y: Math.sin(m * modAng + this.axis.offset.θ) * this.radius
       };
 
       const color = this.segmentColor(n, m, a, b);
@@ -760,7 +777,8 @@ document.addEventListener('DOMContentLoaded', function() {
     controls: true,
     paletteVariants: true,
     colorPattern: 'leastPrimeFactor',
-    colorPalette: 'dyadic_1'
+    colorPalette: 'dyadic_1',
+    // axis: {offset: {x: -150}}
   });
 
   window.mc = mc;
