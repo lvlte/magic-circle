@@ -34,7 +34,7 @@ body {
   text-overflow: ellipsis;
 }
 
-#controls .parameter input,
+#controls .parameter input:not([type=checkbox]),
 #controls .parameter select {
   width: 120px;
   color: #eee;
@@ -53,6 +53,10 @@ body {
 
 #controls .parameter input[type=range] {
   height: 16px;
+}
+
+#controls .parameter input[type=checkbox] {
+  vertical-align: bottom;
 }
 
 #controls .parameter > output {

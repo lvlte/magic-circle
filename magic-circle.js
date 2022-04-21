@@ -76,6 +76,8 @@ class MagicCircle {
       }
     },
     lpfFilter: {
+      toggleable: true,
+      disabled: true,
       input: {
         type: 'number',
         min: 2,
@@ -84,6 +86,7 @@ class MagicCircle {
       }
     },
     multiplier: {
+      toggleable: true,
       input: {
         type: 'range',
         min: 0,
@@ -91,6 +94,7 @@ class MagicCircle {
       }
     },
     modulus: {
+      toggleable: true,
       input: {
         type: 'range',
         min: 1,
@@ -216,10 +220,13 @@ class MagicCircle {
 
   updateInput(param, value) {
     const element = document.getElementById(param);
-    if (!element) {
+    if (!element)
       return false;
-    }
+
     element.value = value;
+    if (element._valueAttr)
+      element[element._valueAttr] = value;
+
     element.dispatchEvent(new Event('input'));
     return true;
   }
@@ -369,7 +376,7 @@ class MagicCircle {
       }
 
       case 'leastPrimeFactor': {
-        if (this.lpfFilter) {
+        if ((this.lpfFilterToggle ?? true) && this.lpfFilter) {
           const color = this.lpfPalette[this.lpfFilter];
           return this.lpfPalette[n] === color ? color : false;
         }
@@ -476,7 +483,7 @@ class MagicCircle {
 
     input.setAttribute('id', param);
     input.setAttribute('name', param);
-    input.setAttribute(me.inputs[param].valueAttr ?? 'value', value);
+    input.setAttribute('value', value);
 
     // Bindings
     input.addEventListener('input', function (event) {
@@ -514,6 +521,12 @@ class MagicCircle {
       });
     }
 
+    if (me.inputs[param].toggleable) {
+      const toggle = me.createToggle(param);
+      toInit.push(toggle);
+      div.appendChild(toggle);
+    }
+
     form.appendChild(div);
   }
 
@@ -525,11 +538,37 @@ class MagicCircle {
     output.style.display = type === 'range' ? 'block' : 'none';
     return output;
   }
+
+  createToggle(param) {
+    const me = this;
+    const tParam = param + 'Toggle';
+    const tField = '_' + tParam;
+
+    me.defineProxyField(tField, tParam);
+    me[tParam] = !(me.inputs[param].disabled ?? false);
+    me.inputs[tParam] = {};
+
+    const toggle = document.createElement('input');
+    toggle.setAttribute('id', tParam);
+    toggle.setAttribute('type', 'checkbox');
+    toggle.setAttribute('name', tParam);
+    toggle.setAttribute('value', me[tParam]);
+
+    if (me[tParam]) toggle.setAttribute('checked', true);
+    else toggle.removeAttribute('checked');
+
+    toggle._valueAttr = 'checked';
+
+    toggle.addEventListener('input', function (event) {
+      me.inputHandler.apply(me, [this, tParam, event]);
+    });
+
+    return toggle;
+}
+
   inputHandler(input, param, event) {
     this.#inputTimeStamp = event.timeStamp;
-
-    const value = Number.isNaN(input.valueAsNumber ?? NaN) ?
-            input.value : input.valueAsNumber;
+    const value = input._valueAttr ? input[input._valueAttr] : input.value;
 
     const field = '_' + param;
     if (field in this) {
@@ -614,13 +653,11 @@ class MagicCircle {
   animate() {
     const me = this;
 
-    // eslint-disable-next-line no-constant-condition
-    if (true || me.inputs.multiplier.toggle) {
+    if (me.multiplierToggle ?? true) {
       me.multiplier += me.mulStep;
     }
 
-    // eslint-disable-next-line no-constant-condition
-    if (true || me.inputs.modulus.toggle) {
+    if (me.modulusToggle ?? true) {
       me.modulus += me.modStep;
     }
 
