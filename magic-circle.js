@@ -47,7 +47,7 @@ class MagicCircle {
     // corresponding (non-nested) _<parameter>, if any.
     colorPattern: {
       element: 'select',
-      handler: 'colorHandler',
+      handler: 'colorPatternHandler',
       label: 'color pattern',
       select: {
         options: [
@@ -136,10 +136,17 @@ class MagicCircle {
         }
       }
       this.colorPalettes = variants;
-      this.inputs.colorPalette.select.options = Object.keys(variants)
+      if (this.inputs.colorPalette.select) {
+        this.inputs.colorPalette.select.options = Object.keys(variants);
+      }
       if (!(this.colorPalette in this.colorPalettes)) {
         this.colorPalette += '_0';
       }
+    }
+
+    // Create custom lpf palette if not already done (via settings).
+    if (!this.lpfPalette) {
+      this.lpfPalette = this.lpfGenPalette();
     }
 
     if (this.controls) {
@@ -451,7 +458,7 @@ class MagicCircle {
     // Elements for which the parameter requires an 'input' event for init.
     const toInit = [];
     for (const param in me.inputs) {
-      me.createInput(form, param, toInit);
+      me.inputs[param] && me.createInput(form, param, toInit);
     }
 
     ctrl.appendChild(form);
@@ -504,11 +511,7 @@ class MagicCircle {
       me.inputHandler.apply(me, [this, param, event]);
     });
 
-    if (me.inputs[param].bindTo) {
-      toInit.push(input);
-    }
-
-    if (me.inputs[param].handler) {
+    if (me.inputs[param].bindTo || me.inputs[param].handler) {
       toInit.push(input);
     }
 
@@ -574,26 +577,26 @@ class MagicCircle {
       this.render();
   }
 
-  colorHandler(input, param, pattern) {
+  colorPatternHandler(input, param, pattern) {
     // Hide picker for non-monochrome patterns.
     const picker = document.getElementsByClassName('color')[0];
-    if (pattern.startsWith('mono')) {
-      picker.style.display = 'inline-block';
-      input.classList.add('short');
-    }
-    else {
-      picker.style.display = 'none';
-      input.classList.remove('short');
+    if (picker) {
+      if (pattern.startsWith('mono')) {
+        picker.style.display = 'inline-block';
+        input.classList.add('short');
+      }
+      else {
+        picker.style.display = 'none';
+        input.classList.remove('short');
+      }
     }
 
     // Show palette selector only for segmentLength pattern.
     const selector = document.getElementsByClassName('colorPalette')[0];
-    selector.style.display = pattern === 'segmentLength' ? 'block' : 'none';
-
-    // Create custom palette for leastPrimeFactor pattern if not already done.
-    if (pattern === 'leastPrimeFactor' && !this.lpfPalette) {
-      this.lpfPalette = this.lpfGenPalette();
+    if (selector) {
+      selector.style.display = pattern === 'segmentLength' ? 'block' : 'none';
     }
+
   }
 
   lpfGenPalette() {
