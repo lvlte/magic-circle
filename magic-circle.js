@@ -1,8 +1,12 @@
 
 class MagicCircle {
 
-  // These _fields (beginning with underscore) have getters/setters, they are
-  // bound to their respective input elements if any (when controls == true).
+  colorPalettes = COLOR_PALETTES;
+  paletteVariants = false;          // whether to create palette variants
+  lpfPalette;                       // custom palette for lpf color pattern
+
+  // Fields beginning with _underscore have getters/setters which are bound to
+  // their respective input elements if any (when controls == true).
 
   _multiplier = 2;
   _modulus = 10;
@@ -14,8 +18,8 @@ class MagicCircle {
   _color = '#999999';               // lower-case hexadecimal notation only
   _colorPattern = 'segmentLength';  // @see input options below
 
-  colorPalettes = COLOR_PALETTES;
-  paletteVariants = false;           // whether to create palette variants
+  // Filtering those n having their least prime factor in common.
+  _lpfFilter = 2;
 
   // Selected palette
   _colorPalette = Object.keys(this.colorPalettes)[0];
@@ -39,7 +43,7 @@ class MagicCircle {
     }
   };
 
-  controls = true;           // whether or not to create controls (DOM inputs).
+  controls = true;          // whether or not to create controls (DOM inputs)
 
   inputs = {
     // Create <input/> element if not told otherwise.
@@ -69,6 +73,14 @@ class MagicCircle {
       label: 'color palette',
       select: {
         options: Object.keys(this.colorPalettes)
+      }
+    },
+    lpfFilter: {
+      input: {
+        type: 'number',
+        min: 2,
+        max: 50,
+        step: 1
       }
     },
     multiplier: {
@@ -314,6 +326,9 @@ class MagicCircle {
       };
 
       const color = this.segmentColor(n, m, a, b);
+      if (color === false)
+        continue;
+
       this.drawLine(a.x, a.y, b.x, b.y, color);
     }
   }
@@ -327,9 +342,8 @@ class MagicCircle {
 
       case 'segmentLength': {
         const palette = this.colorPalettes[this.colorPalette];
-        if (palette.length < 2) {
+        if (palette.length < 2)
           return palette[0] ?? this.color;
-        }
 
         const dx = Math.abs(a.x - b.x);
         const dy = Math.abs(a.y - b.y);
@@ -355,6 +369,10 @@ class MagicCircle {
       }
 
       case 'leastPrimeFactor': {
+        if (this.lpfFilter) {
+          const color = this.lpfPalette[this.lpfFilter];
+          return this.lpfPalette[n] === color ? color : false;
+        }
         return this.lpfPalette[n];
       }
     }
@@ -482,20 +500,15 @@ class MagicCircle {
 
     div.appendChild(input);
 
-    const toggle = {range: 'number', number: 'range'};
-    if (props.type in toggle) {
-      // Display actual value for range input (create the output element in both
-      // cases as we allow to switch from one to the other).
-      const output = document.createElement('output');
-      output.setAttribute('name', param + '-output');
-      output.setAttribute('for', param);
-      output.value = value;
-      output.style.display = props.type === 'range' ? 'block' : 'none';
+    const switchType = {range: 'number', number: 'range'};
+    if (props.type in switchType) {
+      input._valueAttr = 'valueAsNumber';
+      const output = this.createOutput(param, value, props.type);
       div.appendChild(output);
       div.addEventListener('dblclick', function(event) {
         if (me.animation.paused && event.timeStamp - me.#inputTimeStamp < 200)
           return;
-        const type = toggle[input.getAttribute('type')];
+        const type = switchType[input.getAttribute('type')];
         input.setAttribute('type', type);
         output.style.display = type === 'range' ? 'block' : 'none';
       });
@@ -504,6 +517,14 @@ class MagicCircle {
     form.appendChild(div);
   }
 
+  createOutput(param, value, type) {
+    const output = document.createElement('output');
+    output.setAttribute('name', param + '-output');
+    output.setAttribute('for', param);
+    output.value = value;
+    output.style.display = type === 'range' ? 'block' : 'none';
+    return output;
+  }
   inputHandler(input, param, event) {
     this.#inputTimeStamp = event.timeStamp;
 
@@ -551,6 +572,11 @@ class MagicCircle {
       selector.style.display = pattern === 'segmentLength' ? 'block' : 'none';
     }
 
+    // Show lpfFilter only for leastPrimeFactor pattern.
+    const lpf = document.getElementsByClassName('lpfFilter')[0];
+    if (lpf) {
+      lpf.style.display = pattern === 'leastPrimeFactor' ? 'block' : 'none';
+    }
   }
 
   lpfGenPalette() {
