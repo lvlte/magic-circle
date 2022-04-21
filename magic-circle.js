@@ -117,13 +117,12 @@ class MagicCircle {
   // Canvas origin
   #origin = { x: 0, y: 0 };
 
+
   constructor (id, settings) {
     this.id = id;
 
     // Override defaults with passed-in settings if any.
-    for (const prop in {id, ...settings}) {
-      this[prop] = settings[prop];
-    }
+    merge(this, settings);
 
     const canvas = document.getElementById(id);
     this.ctx = canvas.getContext('2d');
@@ -700,6 +699,24 @@ function rotate(array, r=1, rev=false) {
   while (r > 0);
 
   return array;
+}
+
+function type(obj) {
+  return Object.prototype.toString.call(obj).slice(8,-1);
+}
+
+function isObject(obj) {
+  return type(obj) === 'Object';
+}
+
+function merge(target, source) {
+  for (const key in source) {
+    if (isObject(target[key]) && isObject(source[key]))
+      merge(target[key], source[key]);
+    else
+      target[key] = source[key];
+  }
+  return target;
 }
 
 window.requestAnimationFrame = window.requestAnimationFrame ||
