@@ -121,6 +121,18 @@ class MagicCircle {
   constructor (id, settings) {
     this.id = id;
 
+    // Proxying _fields via getters/setters dynamically.
+    for (const field in this) {
+      if (field[0] != '_')
+        continue;
+
+      const param = field.slice(1);
+      const modifier = param === 'multiplier' || param === 'modulus' ?
+              (value) => value = Math.round(value * 1000) / 1000 : undefined;
+
+      this.defineProxyField(field, param, modifier);
+    }
+
     // Override defaults with passed-in settings if any.
     merge(this, settings);
 
@@ -157,6 +169,20 @@ class MagicCircle {
     window.addEventListener('resize', this.initAxis.bind(this));
   }
 
+  defineProxyField(field, param, modifier) {
+    const setter = function(value) {
+      if (!this.updateInput(param, value)) {
+        this[field] = value;
+      }
+    };
+    Object.defineProperty(this, param, {
+      get() { return this[field] },
+      set: !modifier ? setter : function(value) {
+        setter.call(this, modifier(value));
+      }
+    });
+  }
+
   initAxis () {
     const can = this.ctx.canvas;
     can.width = Math.floor(windowWidth());
@@ -174,78 +200,6 @@ class MagicCircle {
     if (this.animation.paused) {
       this.render();
     }
-  }
-
-  set multiplier(value) {
-    value = Math.round(value * 1000) / 1000;
-    if (!this.updateInput('multiplier', value)) {
-      this._multiplier = value;
-    }
-  }
-
-  get multiplier() {
-    return this._multiplier;
-  }
-
-  set modulus(value) {
-    value = Math.round(value * 1000) / 1000;
-    if (!this.updateInput('modulus', value)) {
-      this._modulus = value;
-    }
-  }
-
-  get modulus() {
-    return this._modulus;
-  }
-
-  set mulStep(value) {
-    if (!this.updateInput('mulStep', value)) {
-      this._mulStep = value;
-    }
-  }
-
-  get mulStep() {
-    return this._mulStep;
-  }
-
-  set modStep(value) {
-    if (!this.updateInput('modStep', value)) {
-      this._modStep = value;
-    }
-  }
-
-  get modStep() {
-    return this._modStep;
-  }
-
-  set color(value) {
-    if (!this.updateInput('color', value)) {
-      this._color = value;
-    }
-  }
-
-  get color() {
-    return this._color;
-  }
-
-  set colorPattern(value) {
-    if (!this.updateInput('colorPattern', value)) {
-      this._colorPattern = value;
-    }
-  }
-
-  get colorPattern() {
-    return this._colorPattern;
-  }
-
-  set colorPalette(value) {
-    if (!this.updateInput('colorPalette', value)) {
-      this._colorPalette = value;
-    }
-  }
-
-  get colorPalette() {
-    return this._colorPalette;
   }
 
   updateInput(param, value) {
