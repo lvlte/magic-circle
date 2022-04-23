@@ -126,7 +126,19 @@ class MagicCircle {
   };
 
   animation = {
-    paused: true
+    paused: true,
+    hooks: {
+      multiplierAnim: function() {
+        if (this.multiplierToggle ?? true) {
+          this.multiplier += this.mulStep;
+        }
+      },
+      modulusAnim: function() {
+        if (this.modulusToggle ?? true) {
+          this.modulus += this.modStep;
+        }
+      }
+    }
   };
 
 
@@ -169,6 +181,10 @@ class MagicCircle {
 
     this.initAxis();
     window.addEventListener('resize', this.initAxis.bind(this));
+
+    if (this.animation.paused === false) {
+      this.animate();
+    }
   }
 
   defineProxyField(field, modifier) {
@@ -608,6 +624,11 @@ class MagicCircle {
     if (lpf) {
       lpf.style.display = pattern === 'leastPrimeFactor' ? 'block' : 'none';
     }
+
+    if (pattern === 'monoShifted')
+      this.animation.hooks.colorShift = this.colorShift;
+    else
+      delete this.animation.hooks.colorShift;
   }
 
   static lpfGenPalette(len) {
@@ -652,26 +673,16 @@ class MagicCircle {
   }
 
   animate() {
-    const me = this;
-
-    if (me.multiplierToggle ?? true) {
-      me.multiplier += me.mulStep;
+    for (const anim in this.animation.hooks) {
+      this.animation.hooks[anim].call(this);
     }
 
-    if (me.modulusToggle ?? true) {
-      me.modulus += me.modStep;
-    }
+    this.render();
 
-    if (me.colorPattern === 'monoShifted') {
-      me.colorShift();
-    }
-
-    me.render();
-
-    if (me.animation.paused)
+    if (this.animation.paused)
       return;
 
-    requestAnimationFrame(me.animate.bind(me));
+    requestAnimationFrame(this.animate.bind(this));
   }
 
 }
