@@ -220,19 +220,6 @@ class MagicCircle {
     }
   }
 
-  updateInput(param, value) {
-    const element = document.getElementById(param);
-    if (!element)
-      return false;
-
-    element.value = value;
-    if (element._valueAttr)
-      element[element._valueAttr] = value;
-
-    element.dispatchEvent(new Event('input'));
-    return true;
-  }
-
   clearCan() {
     this.translateTo(0, 0);
     this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
@@ -326,11 +313,12 @@ class MagicCircle {
 
     for (let n=1; n<points.length; n++) {
       const m = (n * this.multiplier) % this.modulus;
+      const angle = m * modAng + this.axis.offset.θ;
 
       const a = points[n];
       const b = Math.floor(m) === m ? points[m] : {
-        x: Math.cos(m * modAng + this.axis.offset.θ) * this.radius,
-        y: Math.sin(m * modAng + this.axis.offset.θ) * this.radius
+        x: Math.cos(angle) * this.radius,
+        y: Math.sin(angle) * this.radius
       };
 
       const color = this.segmentColor(n, m, a, b);
@@ -339,6 +327,27 @@ class MagicCircle {
 
       this.drawLine(a.x, a.y, b.x, b.y, color);
     }
+  }
+
+  drawCircle() {
+    const ctx = this.ctx;
+
+    ctx.beginPath();
+    ctx.arc(0, 0, this.radius, 0, 2*Math.PI);
+
+    ctx.strokeStyle = this.axis.color;
+    ctx.stroke();
+  }
+
+  drawLine(x1, y1, x2, y2, color) {
+    const ctx = this.ctx;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+
+    ctx.strokeStyle = color;
+    ctx.stroke();
   }
 
   segmentColor(n, m, a, b) {
@@ -407,27 +416,6 @@ class MagicCircle {
     const step = dist.map(d => d / n);
 
     this._colorTrans = { from, to, step, current: [...from] };
-  }
-
-  drawCircle() {
-    const ctx = this.ctx;
-
-    ctx.beginPath();
-    ctx.arc(0, 0, this.radius, 0, 2*Math.PI);
-
-    ctx.strokeStyle = this.axis.color;
-    ctx.stroke();
-  }
-
-  drawLine(x1, y1, x2, y2, color) {
-    const ctx = this.ctx;
-
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-
-    ctx.strokeStyle = color;
-    ctx.stroke();
   }
 
   addControls() {
@@ -573,7 +561,20 @@ class MagicCircle {
     });
 
     return toggle;
-}
+  }
+
+  updateInput(param, value) {
+    const element = document.getElementById(param);
+    if (!element)
+      return false;
+
+    element.value = value;
+    if (element._valueAttr)
+      element[element._valueAttr] = value;
+
+    element.dispatchEvent(new Event('input'));
+    return true;
+  }
 
   inputHandler(input, param, event) {
     this.#inputTimeStamp = event.timeStamp;
@@ -589,7 +590,10 @@ class MagicCircle {
     }
 
     if (this.inputs[param].handler) {
-      this[this.inputs[param].handler](input, param, value);
+      if (typeof this.inputs[param].handler === 'function')
+        this.inputs[param].handler.apply(this, [input, param, value]);
+      else
+        this[this.inputs[param].handler](input, param, value);
     }
 
     if (input.type === 'range' || input.type === 'number')
