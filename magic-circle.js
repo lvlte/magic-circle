@@ -5,24 +5,28 @@ class MagicCircle {
   paletteVariants = false;          // whether to create palette variants
   lpfPalette;                       // custom palette for lpf color pattern
 
-  // Fields beginning with _underscore have getters/setters which are bound to
-  // their respective input elements if any (when controls == true).
+  // #p[rivate] fields have getters/setters which are also bound to their
+  // respective input elements if any (when controls == true).
+  #p = {
+    multiplier: 2,
+    modulus: 10,
 
-  _multiplier = 2;
-  _modulus = 10;
+    mulStep: 0.005,
+    modStep: 0.05,
 
-  _mulStep = 0.005;
-  _modStep = 0.05;
+    // Default segment color for monochrome patterns
+    color: '#999999',               // lower-case hexadeci
+    colorPattern: 'segmentLength',  // see input options
 
-  // Default segment color for monochrome patterns
-  _color = '#999999';               // lower-case hexadecimal notation only
-  _colorPattern = 'segmentLength';  // @see input options below
+    // Filtering those n having their least prime factor in common.
+    lpfFilter: 2,
 
-  // Filtering those n having their least prime factor in common.
-  _lpfFilter = 2;
+    // Selected palette
+    colorPalette: Object.keys(this.colorPalettes)[0]
+  }
 
-  // Selected palette
-  _colorPalette = Object.keys(this.colorPalettes)[0];
+  #inputTimeStamp = 0;              // Keeps track of the last input timestamp
+  #origin = { x: 0, y: 0 };         // Keeps track of the canvas origin coords
 
   // Radial axis
   axis = {
@@ -46,9 +50,7 @@ class MagicCircle {
   controls = true;          // whether or not to create controls (DOM inputs)
 
   inputs = {
-    // Create <input/> element if not told otherwise.
-    // For each element, the id, name and value attributes are bound to the
-    // corresponding (non-nested) _<parameter>, if any.
+    // Create <input/> element if not told otherwise via 'element' property.
     colorPattern: {
       element: 'select',
       handler: 'colorPatternHandler',
@@ -127,26 +129,15 @@ class MagicCircle {
     paused: true
   };
 
-  // Track the last input timestamp;
-  #inputTimeStamp = 0;
-
-  // Canvas origin
-  #origin = { x: 0, y: 0 };
-
 
   constructor (id, settings) {
     this.id = id;
 
-    // Proxying _fields via getters/setters dynamically.
-    for (const field in this) {
-      if (field[0] != '_')
-        continue;
-
-      const param = field.slice(1);
-      const modifier = param === 'multiplier' || param === 'modulus' ?
+    // Proxying #private fields via getters/setters dynamically.
+    for (const field in this.#p) {
+      const modifier = field === 'multiplier' || field === 'modulus' ?
               (value) => value = Math.round(value * 1000) / 1000 : undefined;
-
-      this.defineProxyField(field, param, modifier);
+      this.defineProxyField(field, modifier);
     }
 
     // Override defaults with passed-in settings if any.
@@ -185,14 +176,14 @@ class MagicCircle {
     window.addEventListener('resize', this.initAxis.bind(this));
   }
 
-  defineProxyField(field, param, modifier) {
+  defineProxyField(field, modifier) {
     const setter = function(value) {
-      if (!this.updateInput(param, value)) {
-        this[field] = value;
+      if (!this.updateInput(field, value)) {
+        this.#p[field] = value;
       }
     };
-    Object.defineProperty(this, param, {
-      get() { return this[field] },
+    Object.defineProperty(this, field, {
+      get() { return this.#p[field] },
       set: !modifier ? setter : function(value) {
         setter.call(this, modifier(value));
       }
@@ -542,9 +533,8 @@ class MagicCircle {
   createToggle(param) {
     const me = this;
     const tParam = param + 'Toggle';
-    const tField = '_' + tParam;
 
-    me.defineProxyField(tField, tParam);
+    me.defineProxyField(tParam);
     me[tParam] = !(me.inputs[param].disabled ?? false);
     me.inputs[tParam] = {};
 
@@ -570,9 +560,8 @@ class MagicCircle {
     this.#inputTimeStamp = event.timeStamp;
     const value = input._valueAttr ? input[input._valueAttr] : input.value;
 
-    const field = '_' + param;
-    if (field in this) {
-      this[field] = value;
+    if (param in this.#p) {
+      this.#p[param] = value;
     }
 
     if (this.inputs[param].bindTo) {
