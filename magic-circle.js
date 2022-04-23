@@ -147,13 +147,7 @@ class MagicCircle {
     this.ctx = canvas.getContext('2d');
 
     if (this.paletteVariants) {
-      const palettes = this.colorPalettes;
-      const variants = {};
-      for (const pal in palettes) {
-        for (let i=0; i<palettes[pal].length; i++) {
-          variants[`${pal}_${i}`] = rotate([...palettes[pal]], i, true);
-        }
-      }
+      const variants = MagicCircle.colorPaletteVariants(this.colorPalettes);
       this.colorPalettes = variants;
       if (this.inputs.colorPalette.select) {
         this.inputs.colorPalette.select.options = Object.keys(variants);
@@ -165,7 +159,8 @@ class MagicCircle {
 
     // Create custom lpf palette if not already done (via settings).
     if (!this.lpfPalette) {
-      this.lpfPalette = this.lpfGenPalette();
+      const len = this.inputs.modulus.input.max;
+      this.lpfPalette = MagicCircle.lpfGenPalette(len);
     }
 
     if (this.controls) {
@@ -295,7 +290,6 @@ class MagicCircle {
 
     return this.axis.label.fontSize;
   }
-
 
   drawAxisLabel(point, label, fontSize) {
     const ctx = this.ctx;
@@ -428,7 +422,9 @@ class MagicCircle {
     // Elements for which the parameter requires an 'input' event for init.
     const toInit = [];
     for (const param in me.inputs) {
-      me.inputs[param] && me.createInput(form, param, toInit);
+      if (me.inputs[param]) {
+        form.appendChild(me.createInput(form, param, toInit));
+      }
     }
 
     ctrl.appendChild(form);
@@ -458,18 +454,11 @@ class MagicCircle {
 
     for (const name in props) {
       if (name === 'options' && element === 'select') {
-        props[name].forEach(option => {
-          const opt = document.createElement('option');
-          opt.value = option;
-          opt.text = option;
-          if (option === value) {
-            opt.selected = true;
-          }
-          input.add(opt);
+        props[name].forEach(opt => {
+          input.add(MagicCircle.createCtrlOpt(opt, opt === value));
         });
-        continue;
       }
-      input.setAttribute(name, props[name]);
+      else input.setAttribute(name, props[name]);
     }
 
     input.setAttribute('id', param);
@@ -489,11 +478,8 @@ class MagicCircle {
     div.classList.add('parameter', param);
 
     if (me.inputs[param].label ?? true) {
-      const label = document.createElement('label');
-      const txt = document.createTextNode(me.inputs[param].label ?? param);
-      label.setAttribute('for', param);
-      label.appendChild(txt);
-      div.appendChild(label);
+      const txt = this.inputs[param].label ?? param;
+      div.appendChild(MagicCircle.createCtrlLabel(txt, param));
     }
 
     div.appendChild(input);
@@ -501,8 +487,10 @@ class MagicCircle {
     const switchType = {range: 'number', number: 'range'};
     if (props.type in switchType) {
       input._valueAttr = 'valueAsNumber';
-      const output = this.createOutput(param, value, props.type);
+      const output = MagicCircle.createCtrlOutput(param, value, props.type);
       div.appendChild(output);
+
+      // Allow to switch between number|range types.
       div.addEventListener('dblclick', function(event) {
         if (me.animation.paused && event.timeStamp - me.#inputTimeStamp < 200)
           return;
@@ -513,15 +501,30 @@ class MagicCircle {
     }
 
     if (me.inputs[param].toggleable) {
-      const toggle = me.createToggle(param);
+      const toggle = me.createCtrlToggle(param);
       toInit.push(toggle);
       div.appendChild(toggle);
     }
 
-    form.appendChild(div);
+    return div;
   }
 
-  createOutput(param, value, type) {
+  static createCtrlOpt(option, selected) {
+    const opt = document.createElement('option');
+    opt.text = option;
+    opt.value = option;
+    opt.selected = selected;
+    return opt;
+  }
+
+  static createCtrlLabel(txt, param) {
+    const label = document.createElement('label');
+    label.appendChild(document.createTextNode(txt));
+    label.setAttribute('for', param);
+    return label;
+  }
+
+  static createCtrlOutput(param, value, type) {
     const output = document.createElement('output');
     output.setAttribute('name', param + '-output');
     output.setAttribute('for', param);
@@ -530,7 +533,7 @@ class MagicCircle {
     return output;
   }
 
-  createToggle(param) {
+  createCtrlToggle(param) {
     const me = this;
     const tParam = param + 'Toggle';
 
@@ -607,8 +610,7 @@ class MagicCircle {
     }
   }
 
-  lpfGenPalette() {
-    const len = this.inputs.modulus.input.max;
+  static lpfGenPalette(len) {
     const colors = rotate([...COLOR_PALETTES.triadic], 4);
     const pal = Array(len);
 
@@ -630,6 +632,16 @@ class MagicCircle {
     }
 
     return pal;
+  }
+
+  static colorPaletteVariants(palettes) {
+    const variants = {};
+    for (const pal in palettes) {
+      for (let i=0; i<palettes[pal].length; i++) {
+        variants[`${pal}_${i}`] = rotate([...palettes[pal]], i, true);
+      }
+    }
+    return variants;
   }
 
   toggleAnimation() {
