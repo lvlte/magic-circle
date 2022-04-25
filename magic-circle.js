@@ -153,7 +153,7 @@ class MagicCircle {
     }
 
     // Override defaults with passed-in settings if any.
-    merge(this, settings);
+    Utils.merge(this, settings);
 
     const canvas = document.getElementById(id);
     this.ctx = canvas.getContext('2d');
@@ -203,8 +203,8 @@ class MagicCircle {
 
   initAxis () {
     const can = this.ctx.canvas;
-    can.width = Math.floor(windowWidth());
-    can.height = Math.floor(windowHeight());
+    can.width = Math.floor(Utils.windowWidth());
+    can.height = Math.floor(Utils.windowHeight());
 
     this.radius = Math.floor(Math.min(can.width, can.height) / 2.5);
     this.diameter = 2*this.radius;
@@ -382,7 +382,7 @@ class MagicCircle {
         const r = ecx - i1;
         const rgb = rgb1.map((c, i) => Math.round(c + r*(rgb2[i]-c)) );
 
-        return rgb2hex(rgb);
+        return Utils.rgb2hex(rgb);
       }
 
       case 'leastPrimeFactor': {
@@ -403,13 +403,14 @@ class MagicCircle {
     const { step, current } = this._colorTrans;
     ['r', 'g', 'b'].forEach((c, i) => current[i] += step[i]);
 
-    this.color = rgb2hex(current.map(Math.round));
+    this.color = Utils.rgb2hex(current.map(Math.round));
   }
 
   colorTransition() {
-    this._colorTarget = randomColor();
+    this._colorTarget = Utils.randomColor();
 
-    const [from, to] = [hex2rgb(this.color), hex2rgb(this._colorTarget)];
+    const from = Utils.hex2rgb(this.color);
+    const to = Utils.hex2rgb(this._colorTarget);
     const dist = from.map((c, i) => to[i] - c);
 
     const n = 300; // ~= 60fps * 5s
@@ -636,7 +637,7 @@ class MagicCircle {
   }
 
   static lpfGenPalette(len) {
-    const colors = rotate([...COLOR_PALETTES.triadic], 4);
+    const colors = Utils.rotate([...COLOR_PALETTES.triadic], 4);
     const pal = Array(len);
 
     const fillpal = (n, color) => {
@@ -645,15 +646,15 @@ class MagicCircle {
       while ((n+=step) < len);
     };
 
-    pal[1] = '#000000';
+    pal[1] = Utils.randomColor();
     fillpal(2, '#555555');
 
     let n = 3;
     for (n; colors.length; n+=2) {
-      fillpal(n, rgb2hex(colors.shift()));
+      fillpal(n, Utils.rgb2hex(colors.shift()));
     }
     for (n; n<len; n+=2) {
-      fillpal(n, randomColor());
+      fillpal(n, Utils.randomColor());
     }
 
     return pal;
@@ -663,7 +664,7 @@ class MagicCircle {
     const variants = {};
     for (const pal in palettes) {
       for (let i=0; i<palettes[pal].length; i++) {
-        variants[`${pal}_${i}`] = rotate([...palettes[pal]], i, true);
+        variants[`${pal}_${i}`] = Utils.rotate([...palettes[pal]], i, true);
       }
     }
     return variants;
@@ -692,72 +693,71 @@ class MagicCircle {
 }
 
 /**
- * Helper/utils functions
+ * Utils/helper singleton
  */
+const Utils = {
 
-function windowWidth () {
-  return window.innerWidth ||
-          document.documentElement.clientWidth ||
-          document.body.clientWidth;
-}
+  windowWidth() {
+    return window.innerWidth ||
+            document.documentElement.clientWidth ||
+            document.body.clientWidth;
+  },
 
-function windowHeight () {
-  return window.innerHeight ||
-          document.documentElement.clientHeight ||
-          document.body && document.body.clientHeight;
-}
+  windowHeight() {
+    return window.innerHeight ||
+            document.documentElement.clientHeight ||
+            document.body && document.body.clientHeight;
+  },
 
-function randomColor() {
-  return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-}
+  randomColor() {
+    return '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+  },
 
-function rgb2hex(rgb) {
-  return '#' + rgb.map(c => c.toString(16).padStart(2, '0')).join('');
-}
+  rgb2hex(rgb) {
+    return '#' + rgb.map(c => c.toString(16).padStart(2, '0')).join('');
+  },
 
-function hex2rgb(hex) {
-  return hex.slice(1).match(/.{2}/g).map(c => parseInt(c, 16));
-}
+  hex2rgb(hex) {
+    return hex.slice(1).match(/.{2}/g).map(c => parseInt(c, 16));
+  },
 
-function rotate(array, r=1, rev=false) {
-  if (array.length < 2 || r < 1)
+  rotate(array, r=1, rev=false) {
+    if (array.length < 2 || r < 1)
+      return array;
+
+    const f = rev ? () => {
+      array.unshift(array.pop());
+      return array;
+    } : () => {
+      array.push(array.shift());
+      return array;
+    };
+
+    do f(array, rev, r--)
+    while (r > 0);
+
     return array;
+  },
 
-  const f = rev ? () => {
-    array.unshift(array.pop());
-    return array;
-  } : () => {
-    array.push(array.shift());
-    return array;
-  };
+  type(obj) {
+    return Object.prototype.toString.call(obj).slice(8,-1);
+  },
 
-  do f(array, rev, r--)
-  while (r > 0);
+  isObject(obj) {
+    return Utils.type(obj) === 'Object';
+  },
 
-  return array;
-}
-
-function type(obj) {
-  return Object.prototype.toString.call(obj).slice(8,-1);
-}
-
-function isObject(obj) {
-  return type(obj) === 'Object';
-}
-
-function merge(target, source) {
-  for (const key in source) {
-    if (isObject(target[key]) && isObject(source[key]))
-      merge(target[key], source[key]);
-    else
-      target[key] = source[key];
+  merge(target, source) {
+    for (const key in source) {
+      if (Utils.isObject(target[key]) && Utils.isObject(source[key]))
+        Utils.merge(target[key], source[key]);
+      else
+        target[key] = source[key];
+    }
+    return target;
   }
-  return target;
 }
 
-window.requestAnimationFrame = window.requestAnimationFrame ||
-        window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame ||
-        window.oRequestAnimationFrame || window.msRequestAnimationFrame;
 
 /**
  * Color Palettes
