@@ -1,7 +1,6 @@
 
 body {
   margin: 0;
-  overflow: hidden;
   background-color: #0d1117;
   color: #fff;
 }
@@ -13,14 +12,15 @@ body {
   top: 0;
   right: 0;
   padding: 10px;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 11px;
+  width: 29.5em;
 }
 
 #controls .parameter {
   padding: 5px 0px;
   clear: both;
-  color: #fff;
-  font-family: sans-serif;
-  font-size: 11px;
   height: 20px;
 }
 
@@ -36,18 +36,23 @@ body {
 
 #controls .parameter input:not([type=checkbox]),
 #controls .parameter select {
-  width: 120px;
   color: #eee;
   font-size: 11px;
   background-color: #252f3e;
 }
 
-#controls .parameter select:not(.short) {
-  width: 164px;
+#controls .parameter select,
+#controls .parameter input[type=range] {
+  width: 15em;
+}
+
+#controls .parameter select {
+  margin-right: 3px;
 }
 
 #controls .parameter input[type=number] {
-  width: 156px;
+  margin-right: 3px;
+  width: 14.4em;
   padding: 2px;
 }
 
@@ -83,4 +88,37 @@ body {
 #controls .parameter.color input {
   width: 40px;
   height: 20px;
+}
+
+#ctrl-toggle {
+  padding: 2px;
+  margin: auto;
+  text-align: center;
+  cursor: pointer;
+}
+
+#ctrl-toggle:hover {
+  background-color: #141a24;
+}
+
+#ctrl-toggle::after {
+  content: '⚙️ ▼';
+}
+
+#ctrl-inputs:not(.hidden)+#ctrl-toggle::after {
+  content: '⚙️ ▲';
+}
+
+.hidden {
+  display: none;
+}
+
+
+@media (max-width:480px) {
+
+  #controls {
+    position: static;
+    margin: auto;
+  }
+
 }

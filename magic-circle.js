@@ -175,9 +175,8 @@ class MagicCircle {
       this.lpfPalette = MagicCircle.lpfGenPalette(len);
     }
 
-    if (this.controls) {
-      this.addControls();
-    }
+    this.createControls();
+    this.displayControls(this.controls);
 
     this.initAxis();
     window.addEventListener('resize', this.initAxis.bind(this));
@@ -203,8 +202,19 @@ class MagicCircle {
 
   initAxis () {
     const can = this.ctx.canvas;
-    can.width = Math.floor(Utils.windowWidth());
-    can.height = Math.floor(Utils.windowHeight());
+
+    const width = Utils.windowWidth();
+    const height = Utils.windowHeight();
+
+    can.width = Math.floor(width);
+    can.height = Math.floor(height) - 5;
+
+    if (width <= 480) {
+      const ctrl = document.getElementById('ctrl-inputs');
+      if (ctrl && ctrl.computedStyleMap().get('display').value != 'none') {
+        can.height -= ctrl.offsetHeight;
+      }
+    }
 
     this.radius = Math.floor(Math.min(can.width, can.height) / 2.5);
     this.diameter = 2*this.radius;
@@ -419,37 +429,44 @@ class MagicCircle {
     this._colorTrans = { from, to, step, current: [...from] };
   }
 
-  addControls() {
+  createControls() {
     const me = this;
-    const ctrl = document.getElementById('controls');
-    const form = document.createElement('form');
 
-    // Elements for which the parameter requires an 'input' event for init.
+    const wrapper = document.createElement('div');
+    const ctrl = document.createElement('div');
+    const displayToggle = document.createElement('div');
+
+    wrapper.setAttribute('id', 'controls');
+    ctrl.setAttribute('id', 'ctrl-inputs');
+    displayToggle.setAttribute('id', 'ctrl-toggle');
+    displayToggle.setAttribute('title', 'Show/Hide Controls');
+
+    wrapper.append(ctrl, displayToggle);
+    document.body.prepend(wrapper);
+
     const toInit = [];
     for (const param in me.inputs) {
       if (me.inputs[param]) {
-        form.appendChild(me.createInput(form, param, toInit));
+        ctrl.appendChild(me.createInput(param, toInit));
       }
     }
 
-    ctrl.appendChild(form);
     toInit.forEach(input => input.dispatchEvent(new Event('input')));
 
-    me.addControls = () => 'no-op'; // prevent further execution.
+    displayToggle.addEventListener('click', function() {
+      me.displayControls(ctrl.classList.contains('hidden'));
+      me.initAxis();
+    });
+
+    me.createControls = () => 'no-op'; // prevent further execution.
   }
 
   displayControls(display=true) {
-    const ctrl = document.getElementById('controls');
-    if (!display) {
-      ctrl.style.display = 'none';
-    }
-    else {
-      this.addControls();
-      ctrl.style.display = 'block';
-    }
+    const ctrl = document.getElementById('ctrl-inputs');
+    ctrl.classList[display ? 'remove' : 'add']('hidden');
   }
 
-  createInput(form, param, toInit) {
+  createInput(param, toInit) {
     const me = this;
     const element = me.inputs[param].element ?? 'input';
 
