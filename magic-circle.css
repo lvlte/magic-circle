@@ -15,7 +15,7 @@ body {
   color: #fff;
   font-family: sans-serif;
   font-size: 11px;
-  width: 29.5em;
+  width: 30em;
 }
 
 #controls .parameter {
@@ -62,18 +62,20 @@ body {
 
 #controls .parameter input[type=checkbox] {
   vertical-align: bottom;
+  margin: 3px 2px;
 }
 
 #controls .parameter > output {
   color: #eee;
   text-align: left;
-  padding: 3px 5px;
+  padding: 3px;
   float: right;
-  width: 30px;
+  width: 45px;
   font-size: 11px;
   background-color: #252f3e;
+  overflow: hidden;
+  text-overflow: clip;
 }
-
 
 #controls .parameter.colorPattern {
   display: inline-block;
@@ -119,6 +121,14 @@ body {
   #controls {
     position: static;
     margin: auto;
+  }
+
+}
+
+@media print {
+
+  #ctrl-toggle {
+    display: none;
   }
 
 }
