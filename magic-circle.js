@@ -14,9 +14,10 @@ class MagicCircle {
     mulStep: 0.005,
     modStep: 0.05,
 
-    // Default segment color for monochrome patterns
-    color: '#999999',               // lower-case hexadeci
-    colorPattern: 'segmentLength',  // see input options
+    colorPattern: 'segmentLength',  // see input options below
+
+    // Default segment color for monochrome patterns (lower-case hexadecimal)
+    color: '#999999',
 
     // Filtering those n having their least prime factor in common.
     lpfFilter: 2,
@@ -140,7 +141,6 @@ class MagicCircle {
       }
     }
   };
-
 
   constructor (id, settings) {
     this.id = id;
@@ -451,7 +451,9 @@ class MagicCircle {
       }
     }
 
-    toInit.forEach(input => input.dispatchEvent(new Event('input')));
+    toInit.forEach(input => {
+      input.dispatchEvent(new CustomEvent('input', {detail: 'init'}));
+    });
 
     displayToggle.addEventListener('click', function() {
       me.displayControls(ctrl.classList.contains('hidden'));
@@ -617,7 +619,7 @@ class MagicCircle {
     if (input.type === 'range' || input.type === 'number')
       input.nextElementSibling.value = value;
 
-    if (this.animation.paused)
+    if (this.animation.paused && event.detail != 'init')
       this.render();
   }
 
@@ -764,6 +766,10 @@ const Utils = {
     return Utils.type(obj) === 'Object';
   },
 
+  /**
+   * Merge `source` into `target` recursively.
+   * Nb. arrays, functions and scalar values override target values.
+   */
   merge(target, source) {
     for (const key in source) {
       if (Utils.isObject(target[key]) && Utils.isObject(source[key]))
@@ -837,28 +843,17 @@ const COLOR_PALETTES = {
 }
 
 
-
-// Testing ..
+// Demo
 
 document.addEventListener('DOMContentLoaded', function() {
   const mc = new MagicCircle('f-canvas', {
-    multiplier: 2,
-    modulus: 10,
-    controls: true,
     paletteVariants: true,
-    colorPattern: 'leastPrimeFactor',
-    colorPalette: 'dyadic_1',
-    // axis: {offset: {x: -150}}
+    colorPattern: 'segmentLength',
+    colorPalette: 'dyadic_1'
   });
 
   window.mc = mc;
   console.log('MagicCircle', mc);
 
-  mc.render();
-
   mc.ctx.canvas.addEventListener('click', mc.toggleAnimation.bind(mc));
 });
-
-
-
-
