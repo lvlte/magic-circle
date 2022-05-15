@@ -19,8 +19,8 @@ class MagicCircle {
     // Default segment color for monochrome patterns (lower-case hexadecimal)
     color: '#999999',
 
-    // Filtering those n having their least prime factor in common.
-    lpfFilter: 2,
+    // For leastPrimeFactor pattern, filters those n having their lpf in common.
+    lpfFilter: 2,                   // if controls=false, set 0 to disable.
 
     // Selected palette
     colorPalette: Object.keys(this.colorPalettes)[0]
@@ -175,8 +175,10 @@ class MagicCircle {
       this.lpfPalette = MagicCircle.lpfGenPalette(len);
     }
 
-    this.createControls();
-    this.displayControls(this.controls);
+    if (this.controls) {
+      this.createControls();
+      this.displayControls(true);
+    }
 
     this.initAxis();
     window.addEventListener('resize', this.initAxis.bind(this));
