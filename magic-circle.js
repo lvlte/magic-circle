@@ -105,7 +105,7 @@ class MagicCircle {
       }
     },
     mulStep: {
-      bindTo: ['multiplier', 'step'],
+      handler: 'stepHandler',
       label: 'multiplier-step',
       input: {
         type: 'range',
@@ -115,13 +115,13 @@ class MagicCircle {
       }
     },
     modStep: {
-      bindTo: ['modulus', 'step'],
+      handler: 'stepHandler',
       label: 'modulus-step',
       input: {
         type: 'range',
-        min: 0.05,
+        min: 0.005,
         max: 1,
-        step: 0.05
+        step: 0.005
       }
     }
   };
@@ -148,7 +148,7 @@ class MagicCircle {
     // Proxying #private fields via getters/setters dynamically.
     for (const field in this.#p) {
       const modifier = field === 'multiplier' || field === 'modulus' ?
-              (value) => value = Math.round(value * 1000) / 1000 : undefined;
+              (value) => Math.round(value * 1000) / 1000 : undefined;
       this.defineProxyField(field, modifier);
     }
 
@@ -606,20 +606,15 @@ class MagicCircle {
       this.#p[param] = value;
     }
 
-    if (this.inputs[param].bindTo) {
-      const [id, attr] = this.inputs[param].bindTo;
-      document.getElementById(id).setAttribute(attr, value);
-    }
+    if (input.type === 'range' || input.type === 'number')
+      input.nextElementSibling.value = Math.round(value * 1000) / 1000;
 
     if (this.inputs[param].handler) {
       if (typeof this.inputs[param].handler === 'function')
-        this.inputs[param].handler.apply(this, [input, param, value]);
+        this.inputs[param].handler.call(this, input, param, value, event);
       else
-        this[this.inputs[param].handler](input, param, value);
+        this[this.inputs[param].handler](input, param, value, event);
     }
-
-    if (input.type === 'range' || input.type === 'number')
-      input.nextElementSibling.value = value;
 
     if (this.animation.paused && event.detail != 'init')
       this.render();
@@ -655,6 +650,12 @@ class MagicCircle {
       this.animation.hooks.colorShift = this.colorShift;
     else
       delete this.animation.hooks.colorShift;
+  }
+
+  stepHandler(input, param, value) {
+    const id = {mulStep: 'multiplier', modStep: 'modulus'}[param];
+    const target = document.getElementById(id);
+    target.setAttribute('step', value);
   }
 
   static lpfGenPalette(len) {
