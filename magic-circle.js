@@ -23,7 +23,10 @@ class MagicCircle {
     lpfFilter: 2,                   // if controls=false, set 0 to disable.
 
     // Selected palette
-    colorPalette: Object.keys(this.colorPalettes)[0]
+    colorPalette: Object.keys(this.colorPalettes)[0],
+
+    // Animation scale (-/+ = backward/forward, magnitude = speed).
+    animScale: 1
   }
 
   #inputTimeStamp = 0;              // Keeps track of the last input timestamp
@@ -123,6 +126,16 @@ class MagicCircle {
         max: 1,
         step: 0.005
       }
+    },
+    animScale: {
+      handler: 'animScaleHandler',
+      label: 'anim-scale',
+      input: {
+        type: 'range',
+        min: -5,
+        max: 5,
+        step: 0.25
+      }
     }
   };
 
@@ -131,12 +144,12 @@ class MagicCircle {
     hooks: {
       multiplierAnim: function() {
         if (this.multiplierToggle ?? true) {
-          this.multiplier += this.mulStep;
+          this.multiplier += this.mulStep * this.animScale;
         }
       },
       modulusAnim: function() {
         if (this.modulusToggle ?? true) {
-          this.modulus += this.modStep;
+          this.modulus += this.modStep * this.animScale;
         }
       }
     }
@@ -516,13 +529,19 @@ class MagicCircle {
       const output = MagicCircle.createCtrlOutput(param, value, props.type);
       div.appendChild(output);
 
-      // Allow to switch between number|range types.
+      // Allow user to switch between number|range types.
       div.addEventListener('dblclick', function(event) {
         if (me.animation.paused && event.timeStamp - me.#inputTimeStamp < 200)
           return;
         const type = switchType[input.getAttribute('type')];
         input.setAttribute('type', type);
         output.style.display = type === 'range' ? 'block' : 'none';
+        // Switching steps param to 'range' type may block animation if the anim
+        // scale is less than or equal to 0.5, need to trigger stepHandler.
+        const stepParam = {multiplier: 'mulStep', modulus: 'modStep'}[param];
+        if (stepParam) {
+          me[stepParam] = me[stepParam]; // eslint-disable-line no-self-assign
+        }
       });
     }
 
@@ -655,7 +674,21 @@ class MagicCircle {
   stepHandler(input, param, value) {
     const id = {mulStep: 'multiplier', modStep: 'modulus'}[param];
     const target = document.getElementById(id);
+    if (Math.abs(this.animScale) <= 0.5 && target.type === 'range') {
+      // Range input type prevent values that don't fall on a step, which would
+      // block animation for animScale less than or equal to 0.5.
+      value *= Math.abs(this.animScale);
+    }
     target.setAttribute('step', value);
+  }
+
+  animScaleHandler(input, param, value, event) {
+    input.nextElementSibling.value += 'x';
+    if (event.detail != 'init') {// Math.abs(value) <= 0.5) {
+      // This is to trigger stepHandler
+      this.modStep = this.modStep; // eslint-disable-line no-self-assign
+      this.mulStep = this.mulStep; // eslint-disable-line no-self-assign
+    }
   }
 
   static lpfGenPalette(len) {
