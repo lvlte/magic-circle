@@ -29,7 +29,6 @@ class MagicCircle {
     animScale: 1
   }
 
-  #inputTimeStamp = 0;              // Keeps track of the last input timestamp
   #origin = { x: 0, y: 0 };         // Keeps track of the canvas origin coords
 
   // Radial axis
@@ -331,6 +330,9 @@ class MagicCircle {
   }
 
   drawSegments() {
+    if (Number.isNaN(this.multiplier))
+      return;
+
     const points = this.points;
     const modAng = 2*Math.PI/this.modulus;
 
@@ -531,7 +533,7 @@ class MagicCircle {
 
       // Allow user to switch between number|range types.
       div.addEventListener('dblclick', function(event) {
-        if (me.animation.paused && event.timeStamp - me.#inputTimeStamp < 200)
+        if (event.path[0].nodeName === 'INPUT')
           return;
         const type = switchType[input.getAttribute('type')];
         input.setAttribute('type', type);
@@ -618,7 +620,6 @@ class MagicCircle {
   }
 
   inputHandler(input, param, event) {
-    this.#inputTimeStamp = event.timeStamp;
     const value = input._valueAttr ? input[input._valueAttr] : input.value;
 
     if (param in this.#p) {
@@ -674,9 +675,9 @@ class MagicCircle {
   stepHandler(input, param, value) {
     const id = {mulStep: 'multiplier', modStep: 'modulus'}[param];
     const target = document.getElementById(id);
-    if (Math.abs(this.animScale) <= 0.5 && target.type === 'range') {
+    if (target.type === 'range' && this.animScale != 0) {
       // Range input type prevent values that don't fall on a step, which would
-      // block animation for animScale less than or equal to 0.5.
+      // block animation for animScale <= 0.5, or make it shaky.
       value *= Math.abs(this.animScale);
     }
     target.setAttribute('step', value);
