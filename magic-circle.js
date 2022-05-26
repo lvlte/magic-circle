@@ -160,7 +160,7 @@ class MagicCircle {
     // Proxying #private fields via getters/setters dynamically.
     for (const field in this.#p) {
       const modifier = field === 'multiplier' || field === 'modulus' ?
-              (value) => Math.round(value * 1000) / 1000 : undefined;
+              (value) => Math.round(value * 100000) / 100000 : undefined;
       this.defineProxyField(field, modifier);
     }
 
@@ -675,17 +675,19 @@ class MagicCircle {
   stepHandler(input, param, value) {
     const id = {mulStep: 'multiplier', modStep: 'modulus'}[param];
     const target = document.getElementById(id);
-    if (target.type === 'range' && this.animScale != 0) {
+    if (target.type === 'range' && this.animScale && this.animScale % 1 != 0) {
       // Range input type prevent values that don't fall on a step, which would
       // block animation for animScale <= 0.5, or make it shaky.
-      value *= Math.abs(this.animScale);
+      const d = String(this.animScale % 1).split('.')[1];
+      const m = Utils.gcd(+d, 10**d.length) / 10**d.length;
+      value *= m;
     }
     target.setAttribute('step', value);
   }
 
   animScaleHandler(input, param, value, event) {
     input.nextElementSibling.value += 'x';
-    if (event.detail != 'init') {// Math.abs(value) <= 0.5) {
+    if (event.detail != 'init') {
       // This is to trigger stepHandler
       this.modStep = this.modStep; // eslint-disable-line no-self-assign
       this.mulStep = this.mulStep; // eslint-disable-line no-self-assign
@@ -815,6 +817,11 @@ const Utils = {
         target[key] = source[key];
     }
     return target;
+  },
+
+  gcd(a, b) {
+    const f = (x, y) => y === 0 ? x : f(y, x % y);
+    return f(Math.abs(a), Math.abs(b));
   }
 }
 
