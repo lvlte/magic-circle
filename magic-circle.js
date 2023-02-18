@@ -154,7 +154,7 @@ class MagicCircle {
     }
   };
 
-  constructor (id, settings) {
+  constructor(id, settings) {
     this.id = id;
 
     // Proxying #private fields via getters/setters dynamically.
@@ -167,7 +167,12 @@ class MagicCircle {
     // Override defaults with passed-in settings if any.
     Utils.merge(this, settings);
 
-    const canvas = document.getElementById(id);
+    const canvas = document.createElement('canvas');
+    this.wrapper = document.getElementById(id);
+    this.wrapper.append(canvas);
+
+    this.wrapper.classList.add('mc-wrapper');
+
     this.ctx = canvas.getContext('2d');
 
     if (this.paletteVariants) {
@@ -192,8 +197,8 @@ class MagicCircle {
       this.displayControls(true);
     }
 
-    this.initAxis();
-    window.addEventListener('resize', this.initAxis.bind(this));
+    this.setLayout();
+    window.addEventListener('resize', this.setLayout.bind(this));
 
     if (this.animation.paused === false) {
       this.animate();
@@ -207,28 +212,51 @@ class MagicCircle {
       }
     };
     Object.defineProperty(this, field, {
-      get() { return this.#p[field] },
+      get() {
+        return this.#p[field];
+      },
       set: !modifier ? setter : function(value) {
         setter.call(this, modifier(value));
       }
     });
   }
 
-  initAxis () {
+  setLayout() {
     const can = this.ctx.canvas;
+    const box = this.wrapper;
 
-    const width = Utils.windowWidth();
-    const height = Utils.windowHeight();
+    const ctrl = document.getElementById('controls');
+    const ctrlCS = ctrl && getComputedStyle(ctrl);
 
-    can.width = Math.floor(width);
-    can.height = Math.floor(height) - 5;
+    const winW = Math.floor(Utils.windowWidth());
+    const winH = Math.floor(Utils.windowHeight()) - 5;
 
-    if (width <= 480) {
-      const ctrl = document.getElementById('ctrl-inputs');
-      if (ctrl && ctrl.computedStyleMap().get('display').value != 'none') {
-        can.height -= ctrl.offsetHeight;
+    let size = Math.min(box.clientWidth, winW, box.clientHeight - 5, winH);
+    can.width = size;
+    can.height = size;
+
+    // flex-wrap flag
+    let stacked = false;
+
+    if (ctrl && !(ctrlCS?.position in {absolute: 1, fixed: 1})) {
+      const hidden = ctrl.classList.contains('hidden');
+      if (!hidden && ctrl.offsetLeft < can.offsetLeft + can.offsetWidth) {
+        const minW = Math.min(size, box.clientWidth - 5 - ctrl.offsetWidth);
+        const minH = Math.min(size, box.clientHeight - 5 - ctrl.offsetHeight);
+        size = Math.max(minW, minH);
+        can.height = size;
+        can.width = size;
       }
+      stacked = ctrl.offsetLeft < can.offsetLeft + can.offsetWidth;
     }
+
+    stacked ? box.classList.add('stacked') : box.classList.remove('stacked');
+
+    this.setAxis();
+  }
+
+  setAxis() {
+    const can = this.ctx.canvas;
 
     this.radius = Math.floor(Math.min(can.width, can.height) / 2.5);
     this.diameter = 2*this.radius;
@@ -251,7 +279,7 @@ class MagicCircle {
 
   render() {
     this.clearCan();
-    this.setAxis();
+    this.drawAxis();
     this.drawSegments();
   }
 
@@ -280,7 +308,7 @@ class MagicCircle {
     }
   }
 
-  setAxis() {
+  drawAxis() {
     this.setPoints();
 
     if (!this.axis.display && !this.axis.label.display)
@@ -427,7 +455,7 @@ class MagicCircle {
       this.colorTransition();
     }
 
-    const { step, current } = this._colorTrans;
+    const {step, current} = this._colorTrans;
     ['r', 'g', 'b'].forEach((c, i) => current[i] += step[i]);
 
     this.color = Utils.rgb2hex(current.map(Math.round));
@@ -443,7 +471,7 @@ class MagicCircle {
     const n = 300; // ~= 60fps * 5s
     const step = dist.map(d => d / n);
 
-    this._colorTrans = { from, to, step, current: [...from] };
+    this._colorTrans = {from, to, step, current: [...from]};
   }
 
   createControls() {
@@ -459,7 +487,7 @@ class MagicCircle {
     displayToggle.setAttribute('title', 'Show/Hide Controls');
 
     wrapper.append(ctrl, displayToggle);
-    document.body.prepend(wrapper);
+    this.wrapper.append(wrapper);
 
     const toInit = [];
     for (const param in me.inputs) {
@@ -474,7 +502,7 @@ class MagicCircle {
 
     displayToggle.addEventListener('click', function() {
       me.displayControls(ctrl.classList.contains('hidden'));
-      me.initAxis();
+      me.setLayout();
     });
 
     me.createControls = () => 'no-op'; // prevent further execution.
@@ -532,12 +560,12 @@ class MagicCircle {
       div.appendChild(output);
 
       // Allow user to switch between number|range types.
-      div.addEventListener('dblclick', function(event) {
-        if (event.path[0].nodeName === 'INPUT')
+      div.addEventListener('dblclick', function (event) {
+        if (event.target.nodeName === 'INPUT')
           return;
         const type = switchType[input.getAttribute('type')];
         input.setAttribute('type', type);
-        output.style.display = type === 'range' ? 'block' : 'none';
+        output.style.display = type === 'range' ? 'inline-block' : 'none';
         // Switching steps param to 'range' type may block animation if the anim
         // scale is less than or equal to 0.5, need to trigger stepHandler.
         const stepParam = {multiplier: 'mulStep', modulus: 'modStep'}[param];
@@ -576,7 +604,7 @@ class MagicCircle {
     output.setAttribute('name', param + '-output');
     output.setAttribute('for', param);
     output.value = value;
-    output.style.display = type === 'range' ? 'block' : 'none';
+    output.style.display = type === 'range' ? 'inline-block' : 'none';
     return output;
   }
 
@@ -747,7 +775,6 @@ class MagicCircle {
 
     requestAnimationFrame(this.animate.bind(this));
   }
-
 }
 
 /**
