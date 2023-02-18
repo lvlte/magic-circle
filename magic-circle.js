@@ -914,17 +914,3 @@ const COLOR_PALETTES = {
 }
 
 
-// Demo
-
-document.addEventListener('DOMContentLoaded', function() {
-  const mc = new MagicCircle('f-canvas', {
-    paletteVariants: true,
-    colorPattern: 'segmentLength',
-    colorPalette: 'dyadic_1'
-  });
-
-  window.mc = mc;
-  console.log('MagicCircle', mc);
-
-  mc.ctx.canvas.addEventListener('click', mc.toggleAnimation.bind(mc));
-});
