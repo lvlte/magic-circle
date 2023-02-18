@@ -197,3 +197,18 @@
   }
 
 }
+
+
+/* @demo style */
+
+body {
+  margin: 0;
+}
+
+.mc-wrapper {
+  height: 100vh;
+}
+
+/* end */
+
+
