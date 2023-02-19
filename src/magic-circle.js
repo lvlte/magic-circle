@@ -923,3 +923,14 @@ const COLOR_PALETTES = {
 }
 
 
+// Interesting patterns :
+//
+//  multiplier: x
+//  modulus: (x-1)*10
+//  mulStep: y
+//  modStep: y*10
+//
+//  multiplier: x
+//  modulus: (x+1)*10
+//  mulStep: y
+//  modStep: y*10
