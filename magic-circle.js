@@ -27,9 +27,13 @@ class MagicCircle {
 
     // Animation scale (-/+ = backward/forward, magnitude = speed).
     animScale: 1
-  }
+  };
 
-  #origin = { x: 0, y: 0 };         // Keeps track of the canvas origin coords
+  // Keeps track of the canvas origin coords
+  #origin = {
+    x: 0,
+    y: 0
+  };
 
   // Radial axis
   axis = {
@@ -42,7 +46,7 @@ class MagicCircle {
     color: '#555',
     label: {
       display: true,
-      color: '#b8d0b2',
+      color: '#333',
       room: 15,
       threshold: 7,         // don't display if actual fontSize goes below
       fontSize: 12,         // (size ref.) reduced as modulus increases
@@ -81,7 +85,7 @@ class MagicCircle {
       }
     },
     lpfFilter: {
-      toggleable: true,
+      toggle: 'Filter on/off',
       disabled: true,
       input: {
         type: 'number',
@@ -91,7 +95,7 @@ class MagicCircle {
       }
     },
     multiplier: {
-      toggleable: true,
+      toggle: 'Animate',
       input: {
         type: 'range',
         min: 0,
@@ -99,7 +103,7 @@ class MagicCircle {
       }
     },
     modulus: {
-      toggleable: true,
+      toggle: 'Animate',
       input: {
         type: 'range',
         min: 1,
@@ -575,7 +579,7 @@ class MagicCircle {
       });
     }
 
-    if (me.inputs[param].toggleable) {
+    if (me.inputs[param].toggle) {
       const toggle = me.createCtrlToggle(param);
       toInit.push(toggle);
       div.appendChild(toggle);
@@ -621,6 +625,9 @@ class MagicCircle {
     toggle.setAttribute('type', 'checkbox');
     toggle.setAttribute('name', tParam);
     toggle.setAttribute('value', me[tParam]);
+
+    if (typeof me.inputs[param].toggle === 'string')
+      toggle.setAttribute('title', me.inputs[param].toggle);
 
     if (me[tParam]) toggle.setAttribute('checked', true);
     else toggle.removeAttribute('checked');
