@@ -207,6 +207,8 @@ class MagicCircle {
     if (this.animation.paused === false) {
       this.animate();
     }
+
+    canvas.addEventListener('click', this.toggleAnimation.bind(this));
   }
 
   defineProxyField(field, modifier) {
