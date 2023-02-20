@@ -859,7 +859,7 @@ const Utils = {
     const f = (x, y) => y === 0 ? x : f(y, x % y);
     return f(Math.abs(a), Math.abs(b));
   }
-}
+};
 
 
 /**
@@ -920,17 +920,4 @@ const COLOR_PALETTES = {
     [219, 125, 141]
   ]
 
-}
-
-
-// Interesting patterns :
-//
-//  multiplier: x
-//  modulus: (x-1)*10
-//  mulStep: y
-//  modStep: y*10
-//
-//  multiplier: x
-//  modulus: (x+1)*10
-//  mulStep: y
-//  modStep: y*10
+};
