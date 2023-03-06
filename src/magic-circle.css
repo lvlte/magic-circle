@@ -166,17 +166,22 @@
 }
 
 #ctrl-toggle::after {
-  content: '⚙️';
-}
-
-#ctrl-inputs:not(.hidden)+#ctrl-toggle::after {
   content: '▲ ⚙️';
 }
 
-.hidden {
+#controls.collapsed {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+#controls.collapsed #ctrl-inputs {
   display: none;
 }
 
+#controls.collapsed #ctrl-toggle::after {
+  content: '⚙️';
+}
 
 @container mc-wrapper (min-width: 1280px) {
 

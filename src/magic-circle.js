@@ -245,7 +245,7 @@ class MagicCircle {
     let stacked = false;
 
     if (ctrl && !(ctrlCS?.position in {absolute: 1, fixed: 1})) {
-      const hidden = ctrl.classList.contains('hidden');
+      const hidden = ctrl.classList.contains('collapsed');
       if (!hidden && ctrl.offsetLeft < can.offsetLeft + can.offsetWidth) {
         const minW = Math.min(size, box.clientWidth - 5 - ctrl.offsetWidth);
         const minH = Math.min(size, box.clientHeight - 5 - ctrl.offsetHeight);
@@ -507,7 +507,7 @@ class MagicCircle {
     });
 
     displayToggle.addEventListener('click', function() {
-      me.displayControls(ctrl.classList.contains('hidden'));
+      me.displayControls(wrapper.classList.contains('collapsed'));
       me.setLayout();
     });
 
@@ -515,8 +515,8 @@ class MagicCircle {
   }
 
   displayControls(display=true) {
-    const ctrl = document.getElementById('ctrl-inputs');
-    ctrl.classList[display ? 'remove' : 'add']('hidden');
+    const ctrl = document.getElementById('controls');
+    ctrl.classList[display ? 'remove' : 'add']('collapsed');
   }
 
   createInput(param, toInit) {
